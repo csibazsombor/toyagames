@@ -1,0 +1,27 @@
+@font-face {
+        font-family: 'Chetta';
+        src: url(FONTS/chetta_vissto/ChettaVissto.ttf);
+}
+@font-face {
+        font-family: 'story';
+        src: url(FONTS/start_story/Start\ Story.ttf);
+}
+
+body{
+        background-color: rgb(102, 108, 128);
+        text-align: center;
+}
+h2{
+        font-size: 0.8cm;
+        font-family: 'story';
+        color: white;
+}
+
+.header{
+        margin-left: 10cm;
+        margin-right: 10cm;
+        border-radius: 8px;
+        padding-bottom: 0.15cm;
+        padding-top: 0.15cm;
+        background-color: rgba(255, 255, 255, 0.178);
+}
