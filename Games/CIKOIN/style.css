@@ -1,0 +1,82 @@
+body{
+        font-family: 'story';
+        text-align: center;
+        padding-top: 8cm;
+}
+select{
+        font-size: 0.4cm;
+        background-color: antiquewhite;
+        border-color: transparent;
+        padding: 0.5cm;
+        border-radius: 15px;
+}
+
+input{
+        padding: 0.5cm;
+        border-radius: 15px;
+        transition: 0.4s;
+}
+input textarea {
+        background-color: black;
+}
+.server {
+        display: none;
+}
+.loading{
+        display: none;
+}
+.menu {
+        display: block;
+}
+.team-select{
+        font-size: 0.4cm;
+        border-color: black;
+        border-style: dashed;
+        background-color: rgb(255, 255, 255);
+}
+
+select option {
+        border-radius: 15px;
+        border-bottom: transparent;
+}
+
+button{
+        padding: 0.6cm 1.2cm 0.7cm;
+        font-size: 0.59cm;
+        color: white;
+        background-color: rgb(91, 192, 91);
+        border-color: transparent;
+        border-radius: 9999px;
+        transition: all 0.4s;
+}
+button:hover{
+        opacity: 0.5;
+        transition: all 0.4s;
+}
+.teams{
+        display: none;
+}
+.team-select [value="red"] {
+        color: white;
+        background-color: red;
+        border-color: red;
+}
+.team-select [value="blue"] {
+        color: white;
+        background-color: blue;
+        border-color: blue;
+}
+.characters {
+        display: none;
+}
+.character-select {
+        font-size: 0.4cm;
+        background-color: rgb(218, 109, 109);
+        color: white;
+}
+/* ANIMATIONS */
+
+input:hover{
+        opacity: 0.5;
+        transition: 0.4s;
+}
