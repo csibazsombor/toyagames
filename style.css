@@ -1,31 +1,34 @@
 body{
         background-color: rgb(102, 108, 128);
         text-align: center;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;  /* center horizontally */
+  align-items: flex-start;   /* keep header at top */
+  min-height: 100vh;
+  overflow-x: hidden;        /* prevent left-right scrolling */
 }
+
+.header{
+  text-align: center;
+  width: auto;
+  max-width: 90%;   /* phone-friendly */
+  padding: 0.5rem 1.2rem;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.178);
+}
+
 h2{
   font-size: 0.8cm;
   font-family: 'story';
   color: white;
 }
 
-/* Default (PC + Tablet) */
-.header{
-  text-align: center;
-  margin: 0 auto;
-  width: 60%;               /* takes 60% of screen on PC */
-  border-radius: 8px;
-  padding: 0.5rem 1rem;
-  background-color: rgba(255, 255, 255, 0.178);
-}
-
-/* Phone screens */
-@media (max-width: 600px){
-  .header{
-    width: 90%;             /* wider on phone */
-    padding: 0.5rem;
-  }
-
+/* Make font smaller on phone */
+@media(max-width: 600px){
   h2{
-    font-size: 0.5cm;       /* slightly smaller text for phone */
+    font-size: 0.55cm;
   }
+}
 }
