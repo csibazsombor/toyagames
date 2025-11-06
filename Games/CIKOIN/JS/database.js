@@ -16,23 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ===============================================
-// ✅ GAME START FUNCTION (Runs on ALL clients)
-// ===============================================
-
-let uptime_match = null;
-
-function start_match() {
-  console.log("✅ MATCH STARTED ON THIS CLIENT");
-
-  if (uptime_match) clearInterval(uptime_match);
-
-  let time = 0;
-  uptime_match = setInterval(() => {
-    time++;
-    console.log("⏱ Match Time:", time + "s");
-  }, 1000);
-}
 
 // ===============================================
 // TEAM COLORS
