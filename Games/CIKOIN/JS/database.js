@@ -16,10 +16,28 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ This is the variable you want
-let enough_player = 0;
+// ===============================================
+// ✅ GAME START FUNCTION (Runs on ALL clients)
+// ===============================================
 
-// ✅ TEAM COLORS
+let uptime_match = null;
+
+function start_match() {
+  console.log("✅ MATCH STARTED ON THIS CLIENT");
+
+  if (uptime_match) clearInterval(uptime_match);
+
+  let time = 0;
+  uptime_match = setInterval(() => {
+    time++;
+    console.log("⏱ Match Time:", time + "s");
+  }, 1000);
+}
+
+// ===============================================
+// TEAM COLORS
+// ===============================================
+
 const TEAM_COLORS = {
   red: "#ff4d4d",
   blue: "#4d79ff",
@@ -31,33 +49,73 @@ const TEAM_COLORS = {
   gray: "#8d8d8d"
 };
 
-// ✅ ROOM CODE GENERATOR
+// ===============================================
+// ROOM CODE GENERATOR
+// ===============================================
+
 function generateRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
-  for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
   return code;
 }
 
-// ✅ LISTEN TO ENOUGH_PLAYER UPDATES
-function listenEnoughPlayer(roomCode) {
-  const countRef = ref(db, `rooms/${roomCode}/enough_player`);
-  onValue(countRef, (snapshot) => {
-window.enough_player = snapshot.val() ?? 0;
-console.log("Players in room:", window.enough_player);
+// ===============================================
+// LISTEN PLAYER COUNT (also controls button disable)
+// ===============================================
 
+function listenEnoughPlayer(roomCode) {
+  onValue(ref(db, `rooms/${roomCode}/enough_player`), (snap) => {
+    window.enough_player = snap.val() ?? 0;
+    console.log("👥 Players in room:", window.enough_player);
+
+    const btn = document.getElementById("start_match");
+
+    if (window.enough_player < 2) {
+      btn.disabled = true;
+      btn.style.opacity = "0.5";
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = "1";
+    }
   });
 }
 
-// ✅ CREATE ROOM
+// ===============================================
+// SYNC MATCH START TO EVERY PLAYER
+// ===============================================
+
+function listenMatchState(roomCode) {
+  onValue(ref(db, `rooms/${roomCode}/match_state`), (snap) => {
+    if (snap.val() === "running") {
+      console.log("🔥 MATCH START SIGNAL RECEIVED");
+      start_match();
+    }
+  });
+}
+
+// ===============================================
+// HOST ONLY SEES START BUTTON
+// ===============================================
+
+function setStartButtonVisibility(roomCode, username) {
+  onValue(ref(db, `rooms/${roomCode}/host`), (snap) => {
+    const host = snap.val();
+    const btn = document.getElementById("start_match");
+    btn.style.display = (username === host) ? "block" : "none";
+  });
+}
+
+// ===============================================
+// CREATE ROOM
+// ===============================================
+
 async function createRoom(username) {
   const roomCode = generateRoomCode();
-
   await set(ref(db, `rooms/${roomCode}`), {
     host: username,
-    enough_player: 1, // ✅ Create immediately
+    enough_player: 1,
+    match_state: "waiting",
     players: {
       [username]: {
         team: team.value ?? "gray",
@@ -65,28 +123,25 @@ async function createRoom(username) {
       }
     }
   });
-
   return roomCode;
 }
 
-// ✅ JOIN ROOM + UPDATE PLAYER COUNT
-async function joinRoom(code, username) {
-  const roomRef = ref(db, `rooms/${code}`);
-  const snapshot = await get(roomRef);
-  if (!snapshot.exists()) return false;
+// ===============================================
+// JOIN ROOM
+// ===============================================
 
-  const roomData = snapshot.val();
+async function joinRoom(code, username) {
+  const roomSnap = await get(ref(db, `rooms/${code}`));
+  if (!roomSnap.exists()) return false;
+
+  const room = roomSnap.val();
   const newTeam = team.value ?? "gray";
 
-  // Username taken?
-  if (roomData.players && roomData.players[username]) return "username_taken";
+  if (room.players && room.players[username]) return "username_taken";
 
-  // Team in use?
-  for (const p in roomData.players) {
-    if (roomData.players[p].team === newTeam) return "team_taken";
-  }
+  for (const p in room.players)
+    if (room.players[p].team === newTeam) return "team_taken";
 
-  // Add player
   await update(ref(db, `rooms/${code}/players`), {
     [username]: {
       team: newTeam,
@@ -94,41 +149,39 @@ async function joinRoom(code, username) {
     }
   });
 
-  // ✅ Recount players and update enough_player
-  const playersRef = ref(db, `rooms/${code}/players`);
-  const playersSnapshot = await get(playersRef);
-
-  if (playersSnapshot.exists()) {
-    const count = Object.keys(playersSnapshot.val()).length;
-    await update(ref(db, `rooms/${code}`), { enough_player: count });
-  }
+  const players = await get(ref(db, `rooms/${code}/players`));
+  await update(ref(db, `rooms/${code}`), { enough_player: Object.keys(players.val()).length });
 
   return true;
 }
 
-// ✅ REALTIME PLAYER LIST
+// ===============================================
+// DISPLAY PLAYER LIST LIVE
+// ===============================================
+
 function listenForPlayers(roomCode) {
-  const playersRef = ref(db, `rooms/${roomCode}/players`);
+  onValue(ref(db, `rooms/${roomCode}/players`), (snap) => {
+    const players = snap.val();
+    const div = document.getElementById("players");
+    div.innerHTML = "";
 
-  onValue(playersRef, (snapshot) => {
-    const playersData = snapshot.val();
-    const playersDiv = document.getElementById("players");
-    playersDiv.innerHTML = "";
-
-    for (const username in playersData) {
-      const entry = document.createElement("div");
-      entry.textContent = username;
-      entry.style.background = TEAM_COLORS[playersData[username].team];
-      entry.style.color = "white";
-      entry.style.padding = "6px 12px";
-      entry.style.margin = "4px 4px";
-      entry.style.borderRadius = "10px";
-      playersDiv.appendChild(entry);
+    for (const username in players) {
+      const el = document.createElement("div");
+      el.textContent = username;
+      el.style.background = TEAM_COLORS[players[username].team];
+      el.style.color = "white";
+      el.style.padding = "6px 12px";
+      el.style.margin = "4px";
+      el.style.borderRadius = "10px";
+      div.appendChild(el);
     }
   });
 }
 
-// ✅ BUTTONS
+// ===============================================
+// CREATE SERVER BUTTON
+// ===============================================
+
 document.getElementById("create-server").onclick = async () => {
   const user = player.value.trim();
   const code = await createRoom(user);
@@ -136,26 +189,46 @@ document.getElementById("create-server").onclick = async () => {
   document.getElementById("room-code").textContent = "Room code: " + code;
 
   listenForPlayers(code);
-  listenEnoughPlayer(code); // ✅ Sync variable live
+  listenEnoughPlayer(code);
+  listenMatchState(code);
+  setStartButtonVisibility(code, user);
+
   playgame();
-  beep();
 };
+
+// ===============================================
+// JOIN SERVER BUTTON
+// ===============================================
 
 document.getElementById("join-server").onclick = async () => {
   const user = player.value.trim();
   const code = document.getElementById("code-value").value.trim().toUpperCase();
-  document.getElementById("start_match").style.display = "none";
-  document.getElementById("room-code").textContent = "Room code: " + code;
 
   const result = await joinRoom(code, user);
 
   if (result === true) {
+    document.getElementById("room-code").textContent = "Room code: " + code;
     listenForPlayers(code);
-    listenEnoughPlayer(code); // ✅ Sync variable live
+    listenEnoughPlayer(code);
+    listenMatchState(code);
+    setStartButtonVisibility(code, user);
     playgame();
-    beep();
   }
   else if (result === "username_taken") alert("This username is already taken!");
   else if (result === "team_taken") alert("This team is already chosen!");
   else alert("Room not found!");
+};
+
+// ===============================================
+// ✅ HOST START MATCH (only if 2+ players)
+// ===============================================
+
+document.getElementById("start_match").onclick = () => {
+  if (window.enough_player < 2) {
+    alert("⚠️ Need at least 2 players to start the game!");
+    return;
+  }
+
+  const code = document.getElementById("room-code").textContent.replace("Room code: ", "");
+  update(ref(db, `rooms/${code}`), { match_state: "running" });
 };

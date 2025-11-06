@@ -51,7 +51,7 @@ select option {
 }
 
 button{
-        padding: 0.6cm 1.2cm 0.7cm;
+        padding: 0.6cm 0.9cm 0.5cm;
         font-size: 0.59cm;
         color: white;
         background-color: rgb(91, 192, 91);
@@ -73,10 +73,33 @@ button:hover{
         background-color: blue;
         border-color: blue;
 }
-.game img{
-        width: 250px;
-        height: 250px;
+.map {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;     /* full width */
+  height: 100vh;    /* full height */
+  background: #7ecf7e73; /* cute grass */
+  overflow: hidden;
 }
+.start_match {
+        position: absolute;
+        top: 60%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+}
+/* character images */
+.player-sprite {
+  width: 18vw;   /* responsive size */
+  max-width: 140px;
+  aspect-ratio: 1 / 1;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+}
+
+
 .character-select {
         font-size: 0.4cm;
         background-color: rgb(218, 109, 109);
