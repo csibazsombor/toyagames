@@ -1,7 +1,6 @@
 /****************************************************
- *  CIKOIN MAP + SHOP + INVENTORY SYSTEM (ENHANCED)
- *  GAME-STYLE AVATARS • WIDE SPACING • LIVE COINS
- *  No duplicate players • Default coins = 150
+ *  CIKOIN MAP (FULL) • SHOP + INVENTORY + HP BAR
+ *  Game-style avatars • Wide spacing • Live coins/HP
  ****************************************************/
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
@@ -44,20 +43,17 @@ const CHARACTER_IMAGES = {
   default: "Characters/ciko.png",
 };
 
-// Cosmetic overlays (drawn above avatar)
 const COSMETIC_IMAGES = {
   party_hat: "Shop/hat.png",
 };
 
-// Shop catalog
 const SHOP_ITEMS = [
-  { id: "hp_potion",  name: "Health Potion", price: 50,  desc: "Restore health (consumable)", img: "Shop/health.png",   type: "consumable" },
-  { id: "speed_boost",name: "Speed Boost",   price: 80,  desc: "Faster for 10s (consumable)",img: "Shop/speed.png",    type: "consumable" },
-  { id: "party_hat",  name: "Party Hat",     price: 120, desc: "Cute cosmetic hat (equip)",  img: "Shop/hat.png",      type: "cosmetic"   },
-  { id: "cookie",     name: "Cookie",        price: 30,  desc: "Tasty snack (consumable)",   img: "Shop/cookie.png",   type: "consumable" },
+  { id: "hp_potion",   name: "Health Potion", price: 50,  desc: "Restore 20 HP",    img: "Shop/health.png", type: "consumable" },
+  { id: "speed_boost", name: "Speed Boost",   price: 80,  desc: "Run fast • 10s",   img: "Shop/speed.png",  type: "consumable" },
+  { id: "party_hat",   name: "Party Hat",     price: 120, desc: "Cute cosmetic",    img: "Shop/hat.png",    type: "cosmetic"   },
+  { id: "cookie",      name: "Cookie",        price: 30,  desc: "Happy buff • 5s",  img: "Shop/cookie.png", type: "consumable" },
 ];
 
-// Consumable durations (ms)
 const EFFECT_DURATIONS = {
   speed_boost: 10000,
 };
@@ -65,47 +61,32 @@ const EFFECT_DURATIONS = {
 /* ================================
    HELPERS
 ================================ */
+function now() { return Date.now(); }
+function vibrate(ms = 25) { try { navigator.vibrate?.(ms); } catch {} }
+function beep(duration = 60, freq = 800, vol = 0.04) {
+  try {
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.frequency.value = freq; g.gain.value = vol;
+    o.connect(g); g.connect(ctx.destination); o.start();
+    setTimeout(()=>{ o.stop(); ctx.close(); }, duration);
+  } catch {}
+}
+
 async function ensureDefaultFields(roomCode, username) {
   const pRef = ref(db, `rooms/${roomCode}/players/${username}`);
   const snap = await get(pRef);
   if (!snap.exists()) return;
-  const data = snap.val() || {};
+  const cur = snap.val() || {};
   const patch = {};
-  if (data.coins == null) patch.coins = DEFAULT_COINS;
-  if (!Array.isArray(data.inventory)) patch.inventory = [];
-  if (typeof data.effects !== "object" || data.effects === null) patch.effects = {}; // active timed effects
-  if (typeof data.equipped !== "object" || data.equipped === null) patch.equipped = {}; // cosmetics
+  if (cur.coins == null) patch.coins = DEFAULT_COINS;
+  if (!Array.isArray(cur.inventory)) patch.inventory = [];
+  if (typeof cur.effects !== "object" || cur.effects === null) patch.effects = {};
+  if (typeof cur.equipped !== "object" || cur.equipped === null) patch.equipped = {};
+  if (cur.hp == null) patch.hp = 100;
+  if (cur.maxhp == null) patch.maxhp = 100;
   if (Object.keys(patch).length) await update(pRef, patch);
 }
-
-function vibrate(ms = 25) {
-  if (navigator.vibrate) navigator.vibrate(ms);
-}
-
-function beep(duration = 60, freq = 800, vol = 0.04) {
-  try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.frequency.value = freq;
-    g.gain.value = vol;
-    o.connect(g); g.connect(ctx.destination);
-    o.start();
-    setTimeout(() => { o.stop(); ctx.close(); }, duration);
-  } catch {}
-}
-
-function animateNumber(el, from, to, ms = 400) {
-  const start = performance.now();
-  function step(t) {
-    const p = Math.min(1, (t - start) / ms);
-    el.textContent = Math.round(from + (to - from) * p);
-    if (p < 1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-
-function now() { return Date.now(); }
 
 /* ================================
    STYLES (ONCE)
@@ -121,9 +102,9 @@ function injectStyles() {
     @keyframes twinkle {0%,100%{opacity:.2}50%{opacity:1}}
 
     .player-card { background:rgba(255,255,255,.9); padding:10px; border-radius:14px; min-width:150px;
-      display:flex;flex-direction:column;align-items:center;gap:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); position:relative;}
+      display:flex;flex-direction:column;align-items:center;gap:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); position:relative; }
 
-    /* GAME AVATAR (no circle crop) */
+    /* Game-style avatar */
     .avatar{
       width:120px;height:140px;position:relative;display:flex;justify-content:center;align-items:flex-end;overflow:visible;
       animation:floatIdle 2s ease-in-out infinite;
@@ -188,7 +169,7 @@ function createMap(roomCode) {
     font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
   `;
 
-  // Day/Night overlay + stars
+  // Stars + day/night
   const stars = document.createElement("div");
   stars.className = "stars";
   stars.style = `position:absolute;inset:0;pointer-events:none;opacity:.0;transition:opacity .8s ease;`;
@@ -202,7 +183,6 @@ function createMap(roomCode) {
   }
   map.append(stars);
 
-  // Auto cycle day/night every 25s (visual only)
   let day = true;
   setInterval(()=> {
     day = !day;
@@ -254,12 +234,12 @@ function createMap(roomCode) {
   const shopBtn = document.createElement("button");
   shopBtn.className = "shop-button";
   shopBtn.textContent = "SHOP / INVENTORY";
-  shopBtn.onclick = () => togglePanel("shop", roomCode);
+  shopBtn.onclick = () => switchTab("shop");
   map.appendChild(shopBtn);
 
   // Panels
-  map.appendChild(buildShopPanel());
-  map.appendChild(buildInventoryPanel());
+  document.body.appendChild(buildShopPanel());
+  document.body.appendChild(buildInventoryPanel());
 }
 
 function buildShopPanel() {
@@ -306,23 +286,6 @@ function buildInventoryPanel() {
   return p;
 }
 
-function togglePanel(which, roomCode) {
-  const shop = document.getElementById("shop-panel");
-  const inv  = document.getElementById("inventory-panel");
-
-  if (which === "shop") {
-    const show = shop.style.display !== "flex";
-    shop.style.display = show ? "flex" : "none";
-    inv.style.display  = "none";
-    if (show) switchTab("shop");
-  } else {
-    const show = inv.style.display !== "flex";
-    inv.style.display  = show ? "flex" : "none";
-    shop.style.display = "none";
-    if (show) renderInventory(roomCode);
-  }
-}
-
 function switchTab(to) {
   const shop = document.getElementById("shop-panel");
   const inv  = document.getElementById("inventory-panel");
@@ -345,9 +308,8 @@ function switchTab(to) {
   }
 }
 
-
 /* ================================
-   REALTIME PLAYERS (NO DUPLICATES)
+   REALTIME PLAYERS ON MAP
 ================================ */
 let stopPlayersListener = null;
 
@@ -356,14 +318,13 @@ function displayPlayersOnMap(roomCode) {
 
   if (typeof stopPlayersListener === "function") stopPlayersListener();
 
-  // Attach
   stopPlayersListener = onValue(playersRef, (snap) => {
     const players = snap.val() || {};
     const row = document.getElementById("map-players");
+    if (!row) return;
     row.innerHTML = "";
 
     Object.entries(players).forEach(([name, info]) => {
-      // ensure minimal shape
       const coins = typeof info.coins === "number" ? info.coins : DEFAULT_COINS;
       const teamColor = TEAM_COLORS[info.team] || "#555";
 
@@ -404,7 +365,7 @@ function displayPlayersOnMap(roomCode) {
       };
       avatar.appendChild(img);
 
-      // cosmetic overlay (e.g., party_hat)
+      // cosmetic overlay
       if (info.equipped && info.equipped.cosmetic && COSMETIC_IMAGES[info.equipped.cosmetic]) {
         const cos = document.createElement("img");
         cos.className = "cosmetic";
@@ -423,11 +384,31 @@ function displayPlayersOnMap(roomCode) {
       team.textContent = (info.team || "NONE").toUpperCase();
       team.style = `color:${teamColor};border:2px solid ${teamColor};background:#fff;`;
 
+      /* ===== HP DISPLAY (TEXT + BAR) ===== */
+      const hpWrap = document.createElement("div");
+      hpWrap.style = "width:100px;text-align:center;font-size:12px;margin-top:2px;";
+
+      const hp = info.hp ?? 100;
+      const maxhp = info.maxhp ?? 100;
+
+      const hpText = document.createElement("div");
+      hpText.textContent = `❤️ ${hp}/${maxhp}`;
+
+      const hpBarBg = document.createElement("div");
+      hpBarBg.style = "width:100%;height:6px;background:#333;border-radius:4px;margin-top:2px;";
+
+      const hpBar = document.createElement("div");
+      const hpPercent = Math.max(0, Math.min(1, maxhp ? (hp/maxhp) : 1));
+      hpBar.style = `width:${(hpPercent*100).toFixed(0)}%;height:100%;background:#ff4747;border-radius:4px;transition:width .2s;`;
+      hpBarBg.appendChild(hpBar);
+      hpWrap.append(hpText, hpBarBg);
+      /* =================================== */
+
       const c = document.createElement("div");
       c.className = "small-muted";
       c.textContent = `Cikoins: ${coins}`;
 
-      card.append(avatar, n, team, c);
+      card.append(avatar, n, team, hpWrap, c);
       row.appendChild(card);
     });
   });
@@ -437,6 +418,15 @@ function displayPlayersOnMap(roomCode) {
    USER / LIVE BADGES
 ================================ */
 let stopSelfListener = null;
+async function resolveUsername(roomCode) {
+  if (window.username) return window.username;
+  const snap = await get(ref(db, `rooms/${roomCode}/players`));
+  const obj = snap.val() || {};
+  const first = Object.keys(obj)[0] || null;
+  if (first) window.username = first;
+  return window.username;
+}
+
 async function listenSelf(roomCode) {
   if (typeof stopSelfListener === "function") stopSelfListener();
   const username = await resolveUsername(roomCode);
@@ -455,15 +445,6 @@ async function listenSelf(roomCode) {
 /* ================================
    SHOP
 ================================ */
-async function resolveUsername(roomCode) {
-  if (window.username) return window.username;
-  const snap = await get(ref(db, `rooms/${roomCode}/players`));
-  const obj = snap.val() || {};
-  const first = Object.keys(obj)[0] || null;
-  if (first) window.username = first;
-  return window.username;
-}
-
 async function renderShop(roomCode) {
   const container = document.getElementById("shop-content");
   const badge = document.getElementById("shop-coins");
@@ -488,6 +469,8 @@ async function renderShop(roomCode) {
 
     const img = document.createElement("img");
     img.src = item.img;
+    img.width = 32;
+    img.height = 32;
     img.onerror = () => img.remove();
 
     const meta = document.createElement("div");
@@ -506,7 +489,6 @@ async function renderShop(roomCode) {
     container.appendChild(row);
   });
 
-  // start live listener for current user coins
   listenSelf(roomCode);
 }
 
@@ -516,13 +498,15 @@ async function handleBuy(roomCode, username, item) {
   const result = await runTransaction(pRef, player => {
     player = player || {};
     const coins = typeof player.coins === "number" ? player.coins : DEFAULT_COINS;
-    if (coins < item.price) return;
+    if (coins < item.price) return; // abort transaction
     player.coins = coins - item.price;
     const inv = Array.isArray(player.inventory) ? player.inventory : [];
     inv.push({ id: item.id, name: item.name, at: now(), type: item.type });
     player.inventory = inv;
     if (!player.effects)  player.effects  = {};
     if (!player.equipped) player.equipped = {};
+    if (player.hp == null) player.hp = 100;
+    if (player.maxhp == null) player.maxhp = 100;
     return player;
   });
 
@@ -531,11 +515,14 @@ async function handleBuy(roomCode, username, item) {
     return;
   }
 
-  vibrate();
-  beep();
+  vibrate(); beep();
   alert("Purchased " + item.name + "!");
-  const invPanel = document.getElementById("inventory-panel");
+
+  // Refresh open panels
+  const invPanel  = document.getElementById("inventory-panel");
+  const shopPanel = document.getElementById("shop-panel");
   if (invPanel && invPanel.style.display === "flex") renderInventory(roomCode);
+  if (shopPanel && shopPanel.style.display === "flex") renderShop(roomCode);
 }
 
 /* ================================
@@ -599,7 +586,7 @@ async function renderInventory(roomCode) {
       const unequipBtn = document.createElement("button");
       unequipBtn.className = "btn";
       unequipBtn.textContent = "Unequip";
-      unequipBtn.onclick = () => unequipCosmetic(roomCode, username, it);
+      unequipBtn.onclick = () => unequipCosmetic(roomCode, username);
       actions.appendChild(unequipBtn);
     }
 
@@ -613,11 +600,10 @@ async function renderInventory(roomCode) {
     grid.appendChild(slot);
   });
 
-  // keep coins live
   listenSelf(roomCode);
 }
 
-// Remove one inventory item by index
+// Drop one inventory item by index
 async function dropItem(roomCode, username, index) {
   const pRef = ref(db, `rooms/${roomCode}/players/${username}`);
   await runTransaction(pRef, (player) => {
@@ -632,7 +618,7 @@ async function dropItem(roomCode, username, index) {
   renderInventory(roomCode);
 }
 
-// Equip cosmetic (e.g., party_hat)
+// Equip cosmetic
 async function equipCosmetic(roomCode, username, item) {
   if (!COSMETIC_IMAGES[item.id]) return alert("This item cannot be equipped.");
   const pRef = ref(db, `rooms/${roomCode}/players/${username}/equipped`);
@@ -642,7 +628,7 @@ async function equipCosmetic(roomCode, username, item) {
 }
 
 // Unequip cosmetic
-async function unequipCosmetic(roomCode, username, item) {
+async function unequipCosmetic(roomCode, username) {
   const pRef = ref(db, `rooms/${roomCode}/players/${username}/equipped`);
   await update(pRef, { cosmetic: null });
   vibrate(15);
@@ -665,6 +651,10 @@ async function useItem(roomCode, username, index, item) {
     inv.splice(index, 1);
     player.inventory = inv;
 
+    // ensure hp fields
+    if (player.hp == null) player.hp = 100;
+    if (player.maxhp == null) player.maxhp = 100;
+
     // apply effect
     player.effects = player.effects || {};
     if (id === "speed_boost") {
@@ -672,6 +662,7 @@ async function useItem(roomCode, username, index, item) {
       player.effects.speed_boost = until;
     }
     else if (id === "hp_potion") {
+      player.hp = Math.min(player.maxhp, (player.hp ?? 100) + 20);
       player.effects.healed = now() + 5000;
     }
     else if (id === "cookie") {
@@ -680,8 +671,7 @@ async function useItem(roomCode, username, index, item) {
     return player;
   });
 
-  vibrate(20);
-  beep(50, 900, 0.05);
+  vibrate(20); beep(50, 900, 0.05);
   renderInventory(roomCode);
 }
 
@@ -704,7 +694,7 @@ export function initializeMap(roomCode, username = null) {
 
   createMap(roomCode);
   displayPlayersOnMap(roomCode);
-  listenSelf(roomCode); // keep coin badges live
+  listenSelf(roomCode); // live coin badges
 }
 
 window.initializeMap = initializeMap;
