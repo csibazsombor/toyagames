@@ -17,8 +17,20 @@ let your_name = null;
 let your_team = null;
 let your_character = null;
 
+function beep(frequency = 770, duration = 50) {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = ctx.createOscillator();
+  oscillator.type = "square"; // tone shape
+  oscillator.frequency.value = frequency; // Hz (440 = A tone)
+  oscillator.connect(ctx.destination);
+  oscillator.start();
+  setTimeout(() => oscillator.stop(), duration);
+}
+
+
 function Update_player() {
        navigator.vibrate(50);
+       beep();
         load_div.style.display = "block";
     // Clear old interval if exist
     if (delay_load) clearInterval(delay_load)
@@ -50,6 +62,7 @@ function Update_character() {
 
 function start() {
        navigator.vibrate(100);
+       beep();
         if(player.value == null) return;
         if(player.value == "Toya" || player.value == "Toye") {
                 whoplays_div.style.display = "none";
@@ -72,6 +85,7 @@ function loadgame(){
 }
 
 function accept() {
+       beep();
        navigator.vibrate(50);
        if(your_team == null) return;
        else{
