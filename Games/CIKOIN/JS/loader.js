@@ -7,6 +7,6 @@ function loadScript(url) {
 
 // Load the script
 function loadScripts() {
-loadScript(".js");
-loadScript("extra.js");
+loadScript("scoring-system.js");
+loadScript("skills.js");
 }
