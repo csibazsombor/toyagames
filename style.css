@@ -3,17 +3,29 @@ body{
         text-align: center;
 }
 h2{
-        font-size: 0.8cm;
-        font-family: 'story';
-        color: white;
+  font-size: 0.8cm;
+  font-family: 'story';
+  color: white;
 }
 
+/* Default (PC + Tablet) */
 .header{
-        text-align: center;
-        margin-left: 10cm;
-        margin-right: 10cm;
-        border-radius: 8px;
-        padding-bottom: 0.15cm;
-        padding-top: 0.15cm;
-        background-color: rgba(255, 255, 255, 0.178);
+  text-align: center;
+  margin: 0 auto;
+  width: 60%;               /* takes 60% of screen on PC */
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  background-color: rgba(255, 255, 255, 0.178);
+}
+
+/* Phone screens */
+@media (max-width: 600px){
+  .header{
+    width: 90%;             /* wider on phone */
+    padding: 0.5rem;
+  }
+
+  h2{
+    font-size: 0.5cm;       /* slightly smaller text for phone */
+  }
 }
