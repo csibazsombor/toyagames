@@ -74,7 +74,6 @@ button:hover{
         border-color: blue;
 }
 .map {
-  display: none;
   position: fixed;
   top: 0;
   left: 0;

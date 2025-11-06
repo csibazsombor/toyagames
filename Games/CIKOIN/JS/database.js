@@ -72,7 +72,11 @@ function listenMatchState(roomCode) {
   onValue(ref(db, `rooms/${roomCode}/match_state`), (snap) => {
     if (snap.val() === "running") {
       console.log("🔥 MATCH START SIGNAL RECEIVED");
-      start_match();
+      
+      // Initialize the map instead of calling start_match
+      if (window.initializeMap) {
+        window.initializeMap(roomCode);
+      }
     }
   });
 }
