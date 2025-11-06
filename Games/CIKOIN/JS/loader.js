@@ -5,8 +5,9 @@ function loadScript(url) {
   document.body.appendChild(script);
 }
 
-// Load the script
 function loadScripts() {
-loadScript("scoring-system.js");
-loadScript("skills.js");
+loadScript("./js/scoring-system.js");
+loadScript("./js/skills.js");
+loadScript("./js/match.js");
+
 }

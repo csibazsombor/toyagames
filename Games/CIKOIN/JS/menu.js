@@ -22,8 +22,8 @@ function Update_player() {
     // Clear old interval if exist
     if (delay_load) clearInterval(delay_load)
     delay_load = setInterval(() => {
-    console.log("Delay: " + count);
-    count++;
+        count++;
+        console.log("Delay: " + count);
         if(count == 5) loadgame();
     
     }, 550);   

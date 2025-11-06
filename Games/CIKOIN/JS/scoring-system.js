@@ -4,4 +4,4 @@ function addScore() {
 scores++;
 }
 
-if(scores == 5) superSkill()
+if(scores == 5) superSkill();

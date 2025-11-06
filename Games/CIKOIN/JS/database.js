@@ -16,7 +16,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-// ✅ TEAM COLORS (edit these if needed)
+// ✅ This is the variable you want
+let enough_player = 0;
+
+// ✅ TEAM COLORS
 const TEAM_COLORS = {
   red: "#ff4d4d",
   blue: "#4d79ff",
@@ -28,7 +31,7 @@ const TEAM_COLORS = {
   gray: "#8d8d8d"
 };
 
-// --- GENERATE ROOM CODE ---
+// ✅ ROOM CODE GENERATOR
 function generateRoomCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
@@ -38,56 +41,74 @@ function generateRoomCode() {
   return code;
 }
 
-// --- CREATE ROOM ---
+// ✅ LISTEN TO ENOUGH_PLAYER UPDATES
+function listenEnoughPlayer(roomCode) {
+  const countRef = ref(db, `rooms/${roomCode}/enough_player`);
+  onValue(countRef, (snapshot) => {
+window.enough_player = snapshot.val() ?? 0;
+console.log("Players in room:", window.enough_player);
+
+  });
+}
+
+// ✅ CREATE ROOM
 async function createRoom(username) {
   const roomCode = generateRoomCode();
-  await set(ref(db, "rooms/" + roomCode), {
+
+  await set(ref(db, `rooms/${roomCode}`), {
     host: username,
+    enough_player: 1, // ✅ Create immediately
     players: {
       [username]: {
-        team: team.value,
-        character: character.value,
+        team: team.value ?? "gray",
+        character: character.value ?? "default"
       }
     }
   });
+
   return roomCode;
 }
 
-// --- JOIN ROOM ---
+// ✅ JOIN ROOM + UPDATE PLAYER COUNT
 async function joinRoom(code, username) {
-  const roomRef = ref(db, "rooms/" + code);
+  const roomRef = ref(db, `rooms/${code}`);
   const snapshot = await get(roomRef);
-
   if (!snapshot.exists()) return false;
 
   const roomData = snapshot.val();
-  const newTeam = team.value;
+  const newTeam = team.value ?? "gray";
 
   // Username taken?
-  if (roomData.players && roomData.players[username]) {
-    return "username_taken";
-  }
+  if (roomData.players && roomData.players[username]) return "username_taken";
 
-  // Team already used?
+  // Team in use?
   for (const p in roomData.players) {
-    if (roomData.players[p].team === newTeam) {
-      return "team_taken";
-    }
+    if (roomData.players[p].team === newTeam) return "team_taken";
   }
 
-  await update(ref(db, "rooms/" + code + "/players"), {
+  // Add player
+  await update(ref(db, `rooms/${code}/players`), {
     [username]: {
       team: newTeam,
-      character: character.value,
-    },
+      character: character.value ?? "default"
+    }
   });
+
+  // ✅ Recount players and update enough_player
+  const playersRef = ref(db, `rooms/${code}/players`);
+  const playersSnapshot = await get(playersRef);
+
+  if (playersSnapshot.exists()) {
+    const count = Object.keys(playersSnapshot.val()).length;
+    await update(ref(db, `rooms/${code}`), { enough_player: count });
+  }
 
   return true;
 }
 
-// --- REALTIME PLAYER LIST ---
+// ✅ REALTIME PLAYER LIST
 function listenForPlayers(roomCode) {
-  const playersRef = ref(db, "rooms/" + roomCode + "/players");
+  const playersRef = ref(db, `rooms/${roomCode}/players`);
 
   onValue(playersRef, (snapshot) => {
     const playersData = snapshot.val();
@@ -96,24 +117,18 @@ function listenForPlayers(roomCode) {
 
     for (const username in playersData) {
       const entry = document.createElement("div");
-      const teamName = playersData[username].team;
-
       entry.textContent = username;
-      entry.style.background = TEAM_COLORS[teamName] || "#ffffff";
+      entry.style.background = TEAM_COLORS[playersData[username].team];
       entry.style.color = "white";
       entry.style.padding = "6px 12px";
-      entry.style.margin = "4px 0";
-      entry.style.borderRadius = "9999px";
-      entry.style.fontWeight = "600";
-      entry.style.display = "inline-block";
-      entry.style.width = "fit-content";
-
+      entry.style.margin = "4px 4px";
+      entry.style.borderRadius = "10px";
       playersDiv.appendChild(entry);
     }
   });
 }
 
-// --- UI BUTTONS ---
+// ✅ BUTTONS
 document.getElementById("create-server").onclick = async () => {
   const user = player.value.trim();
   const code = await createRoom(user);
@@ -121,26 +136,24 @@ document.getElementById("create-server").onclick = async () => {
   document.getElementById("room-code").textContent = "Room code: " + code;
 
   listenForPlayers(code);
+  listenEnoughPlayer(code); // ✅ Sync variable live
   playgame();
 };
 
 document.getElementById("join-server").onclick = async () => {
   const user = player.value.trim();
-  const code = document.getElementById("code-value").value.toUpperCase();
+  const code = document.getElementById("code-value").value.trim().toUpperCase();
+  document.getElementById("start_match").style.display = "none";
   document.getElementById("room-code").textContent = "Room code: " + code;
+
   const result = await joinRoom(code, user);
 
   if (result === true) {
     listenForPlayers(code);
+    listenEnoughPlayer(code); // ✅ Sync variable live
     playgame();
-  } 
-  else if (result === "username_taken") {
-    alert("This username is already taken! Choose another.");
   }
-  else if (result === "team_taken") {
-    alert("This team is already chosen! Choose another.");
-  }
-  else if (result === false) {
-    alert("Room not found!");
-  }
+  else if (result === "username_taken") alert("This username is already taken!");
+  else if (result === "team_taken") alert("This team is already chosen!");
+  else alert("Room not found!");
 };
