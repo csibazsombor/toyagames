@@ -19,6 +19,7 @@ input{
 input textarea {
         background-color: black;
 }
+/* Displays*/
 .server {
         display: none;
 }
@@ -27,6 +28,15 @@ input textarea {
 }
 .menu {
         display: block;
+}
+.room {
+        display: none;
+}
+.characters {
+        display: none;
+}
+.teams{
+        display: none;
 }
 .team-select{
         font-size: 0.4cm;
@@ -53,9 +63,6 @@ button:hover{
         opacity: 0.5;
         transition: all 0.4s;
 }
-.teams{
-        display: none;
-}
 .team-select [value="red"] {
         color: white;
         background-color: red;
@@ -65,9 +72,6 @@ button:hover{
         color: white;
         background-color: blue;
         border-color: blue;
-}
-.characters {
-        display: none;
 }
 .character-select {
         font-size: 0.4cm;

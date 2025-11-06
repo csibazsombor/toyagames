@@ -21,6 +21,78 @@ h2{
   font-family: 'story';
   color: white;
 }
+.games {
+  text-align: center;
+  width: 100%;
+  padding: 20px 0;
+}
+
+.title-cikoin {
+  font-size: 0.68cm;
+  font-family: 'story';
+}
+
+.game-container {
+  width: 20%;
+  min-width: 220px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: antiquewhite;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.game-container a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 44px; /* touch-friendly */
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  text-decoration: none;
+  color: #ffffff;
+  background-color: green;
+  transition: 0.4s;
+  box-sizing: border-box;
+}
+
+.game-container a:hover {
+  color: #00ff628e;
+  opacity: 0.7;
+  transition: 0.4s;
+}
+
+/* Tablets / small desktops */
+@media (max-width: 900px) {
+  .game-container {
+    width: 45%;
+    padding: 16px;
+  }
+  .title-cikoin {
+    font-size: 0.6cm;
+  }
+}
+
+/* Make font and layout smaller / touch-friendly on phones */
+@media (max-width: 600px) {
+  .game-container {
+    width: 75%;
+    padding: 12px;
+    height: auto;
+  }
+  .game-container a {
+    padding: 0.6rem;
+    font-size: 0.95rem;
+    border-radius: 12px;
+  }
+  .title-cikoin {
+    font-size: 0.5cm;
+  }
+}
 
 /* Make font smaller on phone */
 @media(max-width: 600px){

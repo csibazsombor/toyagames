@@ -11,7 +11,7 @@ let load_div = document.getElementById("loading");
 let team_div = document.getElementById("teams");
 let character_div = document.getElementById("characters");
 let server_div = document.getElementById("server");
-
+let room_div = document.getElementById("room");
 
 let your_name = null;
 let your_team = null;
