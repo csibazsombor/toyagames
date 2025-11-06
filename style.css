@@ -1,19 +1,18 @@
 body{
-        background-color: rgb(102, 108, 128);
-        text-align: center;
+  background-color: rgb(102, 108, 128);
   margin: 0;
   padding: 0;
   display: flex;
   justify-content: center;  /* center horizontally */
   align-items: flex-start;   /* keep header at top */
   min-height: 100vh;
-  overflow-x: hidden;        /* prevent left-right scrolling */
+  overflow-x: hidden;
 }
 
 .header{
-  text-align: center;
+  text-align: center; /* <--- THIS centers the text */
   width: auto;
-  max-width: 90%;   /* phone-friendly */
+  max-width: 90%;
   padding: 0.5rem 1.2rem;
   border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.178);
@@ -30,5 +29,4 @@ h2{
   h2{
     font-size: 0.55cm;
   }
-}
 }
