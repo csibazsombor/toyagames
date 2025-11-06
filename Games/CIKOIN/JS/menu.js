@@ -18,6 +18,7 @@ let your_team = null;
 let your_character = null;
 
 function Update_player() {
+       navigator.vibrate(80);
         load_div.style.display = "block";
     // Clear old interval if exist
     if (delay_load) clearInterval(delay_load)
@@ -31,6 +32,7 @@ function Update_player() {
 }    
 
 function Update_team() {
+       navigator.vibrate(80);
        if(team.value == null) return;
        if(team.value == "red" || team.value ==  "blue") {
               your_team = team.value,  console.log(your_team);
@@ -38,6 +40,7 @@ function Update_team() {
 }
 
 function Update_character() {
+       navigator.vibrate(80);
        if(character.value == null) return;
        if(character.value == "ciko" || character.value ==  "cloe" || character.value == "pici catto") {
               your_character = character.value,  console.log(your_character);
@@ -46,6 +49,7 @@ function Update_character() {
 }
 
 function start() {
+       navigator.vibrate(150);
         if(player.value == null) return;
         if(player.value == "Toya" || player.value == "Toye") {
                 whoplays_div.style.display = "none";
@@ -68,6 +72,7 @@ function loadgame(){
 }
 
 function accept() {
+       navigator.vibrate(80);
        if(your_team == null) return;
        else{
               team_div.style.display = "none";
