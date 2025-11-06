@@ -17,17 +17,6 @@ let your_name = null;
 let your_team = null;
 let your_character = null;
 
-function beep(frequency = 770, duration = 50) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = ctx.createOscillator();
-  oscillator.type = "square"; // tone shape
-  oscillator.frequency.value = frequency; // Hz (440 = A tone)
-  oscillator.connect(ctx.destination);
-  oscillator.start();
-  setTimeout(() => oscillator.stop(), duration);
-}
-
-
 function Update_player() {
        navigator.vibrate(50);
        beep();
@@ -52,23 +41,25 @@ function Update_team() {
 }
 
 function Update_character() {
-       navigator.vibrate(50);
+
        if(character.value == null) return;
        if(character.value == "ciko" || character.value ==  "cloe" || character.value == "pici catto") {
               your_character = character.value,  console.log(your_character);
-                server_div.style.display = "block";
+              server_div.style.display = "block";
+              navigator.vibrate(50);
        }
 }
 
 function start() {
-       navigator.vibrate(100);
-       beep();
+
         if(player.value == null) return;
         if(player.value == "Toya" || player.value == "Toye") {
                 whoplays_div.style.display = "none";
                 load_div.style.display = "block";
                 your_name = player.value, console.log(your_name);
                 Update_player();
+                       navigator.vibrate(100);
+                       beep();
         }
 
         else{
@@ -85,11 +76,12 @@ function loadgame(){
 }
 
 function accept() {
-       beep();
-       navigator.vibrate(50);
+
        if(your_team == null) return;
        else{
               team_div.style.display = "none";
               character_div.style.display = "block";
+              beep();
+              navigator.vibrate(50);
        }
 }

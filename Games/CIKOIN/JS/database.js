@@ -138,6 +138,7 @@ document.getElementById("create-server").onclick = async () => {
   listenForPlayers(code);
   listenEnoughPlayer(code); // ✅ Sync variable live
   playgame();
+  beep();
 };
 
 document.getElementById("join-server").onclick = async () => {
@@ -152,6 +153,7 @@ document.getElementById("join-server").onclick = async () => {
     listenForPlayers(code);
     listenEnoughPlayer(code); // ✅ Sync variable live
     playgame();
+    beep();
   }
   else if (result === "username_taken") alert("This username is already taken!");
   else if (result === "team_taken") alert("This team is already chosen!");

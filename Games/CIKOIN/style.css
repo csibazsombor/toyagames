@@ -73,6 +73,10 @@ button:hover{
         background-color: blue;
         border-color: blue;
 }
+.game img{
+        width: 250px;
+        height: 250px;
+}
 .character-select {
         font-size: 0.4cm;
         background-color: rgb(218, 109, 109);
