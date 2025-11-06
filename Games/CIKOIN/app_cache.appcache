@@ -1,0 +1,16 @@
+CACHE MANIFEST
+#v1.0.0 change this to force update
+
+CACHE:
+style.css
+index.html
+JS/database.js
+JS/game.js
+JS/loader.js
+JS/map.js
+JS/menu.js
+JS/scoring-system.js
+JS/skills.js
+JS/sounds.js
+Characters/ciko.png
+Characters/pici-catto.png
