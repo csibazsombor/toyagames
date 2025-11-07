@@ -1,191 +1,240 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>My first three.js app</title>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CIKOIN</title>
+
 <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { 
-      overflow:hidden; 
-      font-family:'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive;
-      touch-action: none;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    canvas { display:block; }
-    
-    #ui {
-      position:fixed;
-      top:20px;
-      left:20px;
-      color:#fff;
-      text-shadow:0 3px 6px rgba(0,0,0,0.4);
-      font-size:16px;
-      font-weight:bold;
-      pointer-events:none;
-      z-index:10;
-      background:rgba(255,255,255,0.15);
-      padding:12px 18px;
-      border-radius:20px;
-      backdrop-filter:blur(10px);
-      border:3px solid rgba(255,255,255,0.3);
-    }
-    
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { 
+    overflow:hidden; 
+    font-family:'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive;
+    touch-action: none;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  canvas { display:block; }
+
+  /* UI: Debug / Counters */
+  #ui {
+    position:fixed;
+    top:20px;
+    left:20px;
+    color:#fff;
+    text-shadow:0 3px 6px rgba(0,0,0,0.4);
+    font-size:16px;
+    font-weight:bold;
+    pointer-events:none;
+    z-index:10;
+    background:rgba(255,255,255,0.15);
+    padding:12px 18px;
+    border-radius:20px;
+    backdrop-filter:blur(10px);
+    border:3px solid rgba(255,255,255,0.3);
+  }
+
+  /* Stamina at bottom on desktop, top on mobile */
+  #stamina {
+    position:fixed;
+    bottom:50px;
+    left:50%;
+    transform:translateX(-50%);
+    width:320px;
+    height:30px;
+    background:rgba(255,255,255,0.2);
+    border:4px solid rgba(255,255,255,0.5);
+    border-radius:20px;
+    overflow:hidden;
+    pointer-events:none;
+    box-shadow:0 8px 20px rgba(0,0,0,0.3);
+    backdrop-filter:blur(10px);
+    z-index:5;
+  }
+  #staminaFill {
+    height:100%;
+    background:linear-gradient(90deg, #fbbf24, #f59e0b);
+    transition:width 0.15s ease-out;
+    box-shadow:inset 0 0 20px rgba(255,255,255,0.3);
+    position:relative;
+    overflow:hidden;
+  }
+  #staminaFill::after {
+    content:'';
+    position:absolute;
+    top:0; left:-100%;
+    width:100%; height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    animation:shimmer 2s infinite;
+  }
+  @keyframes shimmer { 0%{left:-100%} 100%{left:200%} }
+  #staminaLabel {
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:13px; font-weight:bold;
+    text-shadow:0 2px 4px rgba(0,0,0,0.6);
+    pointer-events:none; z-index:1;
+  }
+  @media (max-width: 768px) {
     #stamina {
-      position:fixed;
-      bottom:50px;
-      left:50%;
-      transform:translateX(-50%);
-      width:320px;
-      height:30px;
-      background:rgba(255,255,255,0.2);
-      border:4px solid rgba(255,255,255,0.5);
-      border-radius:20px;
-      overflow:hidden;
-      pointer-events:none;
-      box-shadow:0 8px 20px rgba(0,0,0,0.3);
-      backdrop-filter:blur(10px);
+      top:80px; bottom:auto; left:20px; right:20px; transform:none; width:auto; height:20px;
+      border:3px solid rgba(255,255,255,0.5);
     }
-    
-    #staminaFill {
-      height:100%;
-      background:linear-gradient(90deg, #fbbf24, #f59e0b);
-      transition:width 0.15s ease-out;
-      box-shadow:inset 0 0 20px rgba(255,255,255,0.3);
-      position:relative;
-      overflow:hidden;
-    }
-    
-    #staminaFill::after {
-      content:'';
-      position:absolute;
-      top:0;
-      left:-100%;
-      width:100%;
-      height:100%;
-      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
-      animation:shimmer 2s infinite;
-    }
-    
-    @keyframes shimmer {
-      0% { left:-100%; }
-      100% { left:200%; }
-    }
-    
-    #staminaLabel {
-      position:absolute;
-      top:50%;
-      left:50%;
-      transform:translate(-50%,-50%);
-      color:#fff;
-      font-size:13px;
-      font-weight:bold;
-      text-shadow:0 2px 4px rgba(0,0,0,0.6);
-      pointer-events:none;
-      z-index:1;
-    }
-    
-    #gamepad {
-      display:none;
-      position:fixed;
-      bottom:50px;
-      left:50px;
-      width:200px;
-      height:200px;
-      background:rgba(255,255,255,0.2);
-      border:5px solid rgba(255,255,255,0.4);
-      border-radius:50%;
-      touch-action:none;
-      z-index:100;
-      box-shadow:0 8px 25px rgba(0,0,0,0.3);
-      backdrop-filter:blur(10px);
-    }
-    
-    #stick {
-      position:absolute;
-      top:50%;
-      left:50%;
-      width:80px;
-      height:80px;
-      background:linear-gradient(135deg, #fbbf24, #f59e0b);
-      border:5px solid rgba(255,255,255,0.8);
-      border-radius:50%;
-      transform:translate(-50%,-50%);
-      pointer-events:none;
-      box-shadow:0 4px 15px rgba(0,0,0,0.3);
-    }
-    
-    #controls {
-      position:fixed;
-      top:20px;
-      right:20px;
-      background:rgba(255,255,255,0.15);
-      padding:18px;
-      border-radius:20px;
-      color:#fff;
-      font-size:13px;
-      max-width:220px;
-      pointer-events:none;
-      backdrop-filter:blur(10px);
-      border:3px solid rgba(255,255,255,0.3);
-      box-shadow:0 8px 20px rgba(0,0,0,0.3);
-    }
-    
-    #controls h3 {
-      margin:0 0 12px 0;
-      font-size:16px;
-      color:#fbbf24;
-      text-shadow:0 2px 4px rgba(0,0,0,0.3);
-    }
-    
-    #controls p {
-      margin:6px 0;
-      line-height:1.5;
-    }
-    
-    .key {
-      display:inline-block;
-      background:rgba(255,255,255,0.3);
-      padding:3px 8px;
-      border-radius:8px;
-      font-weight:bold;
-      margin:0 2px;
-      border:2px solid rgba(255,255,255,0.4);
-    }
-    
-    #jumpBtn {
-      display:none;
-      position:fixed;
-      bottom:50px;
-      right:50px;
-      width:100px;
-      height:100px;
-      background:linear-gradient(135deg, #ec4899, #8b5cf6);
-      border:5px solid rgba(255,255,255,0.5);
-      border-radius:50%;
-      color:#fff;
-      font-size:20px;
-      font-weight:bold;
-      box-shadow:0 8px 25px rgba(0,0,0,0.3);
-      backdrop-filter:blur(10px);
-      z-index:100;
-      cursor:pointer;
-      user-select:none;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    
-    #jumpBtn:active {
-      transform:scale(0.95);
-    }
+    #staminaLabel { font-size:11px; }
+  }
+
+  /* Mobile controls */
+  #gamepad {
+    display:none;
+    position:fixed;
+    bottom:30px; left:30px;
+    width:140px; height:140px;
+    background:rgba(255,255,255,0.2);
+    border:4px solid rgba(255,255,255,0.4);
+    border-radius:50%;
+    touch-action:none; z-index:100;
+    box-shadow:0 8px 25px rgba(0,0,0,0.3);
+    backdrop-filter:blur(10px);
+  }
+  #stick {
+    position:absolute; top:50%; left:50%;
+    width:55px; height:55px;
+    background:linear-gradient(135deg, #fbbf24, #f59e0b);
+    border:4px solid rgba(255,255,255,0.8);
+    border-radius:50%;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    box-shadow:0 4px 15px rgba(0,0,0,0.3);
+  }
+
+  #jumpBtn {
+    display:none;
+    position:fixed;
+    bottom:30px; right:30px;
+    width:80px; height:80px;
+    background:linear-gradient(135deg, #ec4899, #8b5cf6);
+    border:4px solid rgba(255,255,255,0.5);
+    border-radius:50%;
+    color:#fff; font-size:16px; font-weight:bold;
+    box-shadow:0 8px 25px rgba(0,0,0,0.3);
+    backdrop-filter:blur(10px);
+    z-index:100; touch-action:none; user-select:none;
+  }
+  #jumpBtn:active { transform:scale(0.9); box-shadow:0 4px 15px rgba(0,0,0,0.4); }
+
+  /* Desktop controls help */
+  #controls {
+    position:fixed; top:20px; right:20px;
+    background:rgba(255,255,255,0.15);
+    padding:18px; border-radius:20px;
+    color:#fff; font-size:13px; max-width:220px;
+    pointer-events:none; backdrop-filter:blur(10px);
+    border:3px solid rgba(255,255,255,0.3);
+    box-shadow:0 8px 20px rgba(0,0,0,0.3);
+  }
+  #controls h3 { margin:0 0 12px 0; font-size:16px; color:#fbbf24; text-shadow:0 2px 4px rgba(0,0,0,0.3); }
+  #controls p { margin:6px 0; line-height:1.5; }
+  .key {
+    display:inline-block; background:rgba(255,255,255,0.3);
+    padding:3px 8px; border-radius:8px; font-weight:bold; margin:0 2px;
+    border:2px solid rgba(255,255,255,0.4);
+  }
+
+  /* HP label (CSS2D) */
+  .hp-label {
+    pointer-events:none;
+    transform: translateY(-8px);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.4));
+  }
+  .hp-bar {
+    width:110px; height:16px; border-radius:10px;
+    background:rgba(0,0,0,0.35); border:2px solid rgba(255,255,255,0.7);
+    position:relative; overflow:hidden;
+  }
+  .hp-fill {
+    position:absolute; left:0; top:0; bottom:0; width:100%;
+    background:linear-gradient(90deg, #22c55e, #16a34a);
+    transition:width .15s ease;
+  }
+  .hp-text {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:11px; font-weight:bold; text-shadow:0 2px 4px rgba(0,0,0,.6);
+  }
+#loading-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #89cff0, #b19cff);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  z-index: 9999999;
+  font-family: 'Comic Sans MS', sans-serif;
+  color: white;
+  transition: opacity 0.6s ease;
+}
+
+.loader-cat img {
+  width: 110px;
+  animation: catBounce 1.2s infinite ease-in-out;
+  filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));
+}
+
+@keyframes catBounce {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+#loader-text {
+  font-size: 20px;
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+#loader-bar {
+  width: 260px;
+  height: 16px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.6);
+  backdrop-filter: blur(6px);
+}
+
+#loader-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ffd966, #ffb347);
+  border-radius: 12px;
+  transition: width 0.1s linear;
+}
+
+#loader-percent {
+  font-size: 18px;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
 </style>
 </head>
 
-  <div id="ui">
-    <div id="debug">🎮 Ready to Play!</div>
+<body>
+<div id="loading-screen">
+  <div class="loader-cat">
+    <img src="assets/loading-cat.png" alt="loading cat">
   </div>
-  
+  <div id="loader-text">Loading...</div>
+  <div id="loader-bar">
+    <div id="loader-fill"></div>
+  </div>
+  <div id="loader-percent">0%</div>
+</div>
+</div>
+  <div id="ui">
+    <div id="debug"></div>
+  </div>
+
+ 
   <div id="stamina">
     <div id="staminaFill" style="width:100%"></div>
     <div id="staminaLabel">⚡ ENERGY</div>
@@ -205,18 +254,15 @@
     <p><span class="key">Space</span> Jump</p>
   </div>
 
-
-
-        <script type="importmap">
+<script type="importmap">
 {
   "imports": {
     "three": "./three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.160.0/examples/jsm/"
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
   }
 }
 </script>
 
-  <script type="module" src="./main.js"></script>
-  </body>
+<script type="module" src="./main.js"></script>
+</body>
 </html>
-    
