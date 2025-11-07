@@ -65,12 +65,15 @@ function loadgame(){
 }
 
 function accept() {
-
+       let pressed = false;
+       if(pressed) return;
+      
        if(your_character == null) return;
        else{
               character_div.style.display = "none";
 server_div.style.display = "block";
-              beep();
+              beep_start();
               navigator.vibrate(30);
+              pressed = true;
        }
 }
