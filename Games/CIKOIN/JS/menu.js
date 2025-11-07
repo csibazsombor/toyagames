@@ -35,7 +35,6 @@ function Update_character() {
        if(character.value == null) return;
        if(character.value == "ciko" || character.value ==  "cloe" || character.value == "pici catto") {
               your_character = character.value,  console.log(your_character);
-              server_div.style.display = "block";
               navigator.vibrate(30);
        }
 }
@@ -69,7 +68,8 @@ function accept() {
 
        if(your_character == null) return;
        else{
-              character_div.style.display = "block";
+              character_div.style.display = "none";
+server_div.style.display = "block";
               beep();
               navigator.vibrate(30);
        }
