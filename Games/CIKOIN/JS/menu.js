@@ -69,7 +69,7 @@ function accept() {
        if(your_character == null) return;
        else{
               character_div.style.display = "none";
-room_div.style.display = "block";
+server_div.style.display = "block";
               beep();
               navigator.vibrate(30);
        }
