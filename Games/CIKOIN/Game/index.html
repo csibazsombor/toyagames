@@ -1,22 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>My first three.js app</title>
-    <style>
-      body { margin: 0; }
-    </style>
-  </head>
-  <body>
+<style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { 
+      overflow:hidden; 
+      font-family:'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', cursive;
+      touch-action: none;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    canvas { display:block; }
+    
+    #ui {
+      position:fixed;
+      top:20px;
+      left:20px;
+      color:#fff;
+      text-shadow:0 3px 6px rgba(0,0,0,0.4);
+      font-size:16px;
+      font-weight:bold;
+      pointer-events:none;
+      z-index:10;
+      background:rgba(255,255,255,0.15);
+      padding:12px 18px;
+      border-radius:20px;
+      backdrop-filter:blur(10px);
+      border:3px solid rgba(255,255,255,0.3);
+    }
+    
+    #stamina {
+      position:fixed;
+      bottom:50px;
+      left:50%;
+      transform:translateX(-50%);
+      width:320px;
+      height:30px;
+      background:rgba(255,255,255,0.2);
+      border:4px solid rgba(255,255,255,0.5);
+      border-radius:20px;
+      overflow:hidden;
+      pointer-events:none;
+      box-shadow:0 8px 20px rgba(0,0,0,0.3);
+      backdrop-filter:blur(10px);
+    }
+    
+    #staminaFill {
+      height:100%;
+      background:linear-gradient(90deg, #fbbf24, #f59e0b);
+      transition:width 0.15s ease-out;
+      box-shadow:inset 0 0 20px rgba(255,255,255,0.3);
+      position:relative;
+      overflow:hidden;
+    }
+    
+    #staminaFill::after {
+      content:'';
+      position:absolute;
+      top:0;
+      left:-100%;
+      width:100%;
+      height:100%;
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+      animation:shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { left:-100%; }
+      100% { left:200%; }
+    }
+    
+    #staminaLabel {
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      color:#fff;
+      font-size:13px;
+      font-weight:bold;
+      text-shadow:0 2px 4px rgba(0,0,0,0.6);
+      pointer-events:none;
+      z-index:1;
+    }
+    
+    #gamepad {
+      display:none;
+      position:fixed;
+      bottom:50px;
+      left:50px;
+      width:200px;
+      height:200px;
+      background:rgba(255,255,255,0.2);
+      border:5px solid rgba(255,255,255,0.4);
+      border-radius:50%;
+      touch-action:none;
+      z-index:100;
+      box-shadow:0 8px 25px rgba(0,0,0,0.3);
+      backdrop-filter:blur(10px);
+    }
+    
+    #stick {
+      position:absolute;
+      top:50%;
+      left:50%;
+      width:80px;
+      height:80px;
+      background:linear-gradient(135deg, #fbbf24, #f59e0b);
+      border:5px solid rgba(255,255,255,0.8);
+      border-radius:50%;
+      transform:translate(-50%,-50%);
+      pointer-events:none;
+      box-shadow:0 4px 15px rgba(0,0,0,0.3);
+    }
+    
+    #controls {
+      position:fixed;
+      top:20px;
+      right:20px;
+      background:rgba(255,255,255,0.15);
+      padding:18px;
+      border-radius:20px;
+      color:#fff;
+      font-size:13px;
+      max-width:220px;
+      pointer-events:none;
+      backdrop-filter:blur(10px);
+      border:3px solid rgba(255,255,255,0.3);
+      box-shadow:0 8px 20px rgba(0,0,0,0.3);
+    }
+    
+    #controls h3 {
+      margin:0 0 12px 0;
+      font-size:16px;
+      color:#fbbf24;
+      text-shadow:0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    #controls p {
+      margin:6px 0;
+      line-height:1.5;
+    }
+    
+    .key {
+      display:inline-block;
+      background:rgba(255,255,255,0.3);
+      padding:3px 8px;
+      border-radius:8px;
+      font-weight:bold;
+      margin:0 2px;
+      border:2px solid rgba(255,255,255,0.4);
+    }
+    
+    #jumpBtn {
+      display:none;
+      position:fixed;
+      bottom:50px;
+      right:50px;
+      width:100px;
+      height:100px;
+      background:linear-gradient(135deg, #ec4899, #8b5cf6);
+      border:5px solid rgba(255,255,255,0.5);
+      border-radius:50%;
+      color:#fff;
+      font-size:20px;
+      font-weight:bold;
+      box-shadow:0 8px 25px rgba(0,0,0,0.3);
+      backdrop-filter:blur(10px);
+      z-index:100;
+      cursor:pointer;
+      user-select:none;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    
+    #jumpBtn:active {
+      transform:scale(0.95);
+    }
+</style>
+</head>
+
+  <div id="ui">
+    <div id="debug">🎮 Ready to Play!</div>
+  </div>
+  
+  <div id="stamina">
+    <div id="staminaFill" style="width:100%"></div>
+    <div id="staminaLabel">⚡ ENERGY</div>
+  </div>
+  
+  <div id="gamepad">
+    <div id="stick"></div>
+  </div>
+  
+  <div id="jumpBtn">JUMP</div>
+  
+  <div id="controls">
+    <h3>🎮 Controls</h3>
+    <p><span class="key">WASD</span> Move</p>
+    <p><span class="key">Sprint</span> Auto</p>
+    <p><span class="key">Mouse</span> Camera</p>
+    <p><span class="key">Space</span> Jump</p>
+  </div>
+
+
+
         <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@<version>/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@<version>/examples/jsm/"
+    "three": "./three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@v0.160.0/examples/jsm/"
   }
 }
 </script>
-    <script type="module" src="main.js"></script>
+
+  <script type="module" src="./main.js"></script>
   </body>
 </html>
     
