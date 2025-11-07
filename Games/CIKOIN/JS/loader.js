@@ -9,5 +9,5 @@ function loadScripts() {
   loadScript("./JS/scoring-system.js");
   loadScript("./JS/skills.js");
   loadScript("./JS/match.js");
-  loadScript("./JS/map.js", true);
+  loadScript("./JS/tr.js", true);
 }
