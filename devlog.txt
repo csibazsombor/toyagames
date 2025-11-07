@@ -1,7 +1,6 @@
 - Potions
 You can use heal potion, etc. in the match.
-- scoring system
-The scoring system works when you got damage to other's character, with your Skills.
+- tasks, teamwork
 - Shop
 After round 3, the shop will appear and you can buy potions, more skills.
 - Map
