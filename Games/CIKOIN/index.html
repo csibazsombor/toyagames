@@ -3,7 +3,7 @@
 <head manifest="app_cache.appcache">
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>CIKOIN</title>
+        <title>CIKOIN - Menu</title>
         <link rel="stylesheet" href="style.css">
         <link rel="stylesheet" href="../../CSS/fonts.css">
 </head>
@@ -11,7 +11,7 @@
 
 <div class="menu" id="menu">
         <div class="who-plays" id="who-plays">
-          <h1>CIKOIN<sub style="font-size: 0.25cm;">MEOW</sub></h1>
+          <h1>CIKOIN<sub style="font-size: 0.35cm;">MEOW</sub></h1>
                  
           <select name="" id="who-play">
                   <option value="">Who Plays?</option>
@@ -21,25 +21,9 @@
           <input type="button" value="Play" onclick="start()">
         </div>
         
-
         <div class="loading" id="loading">
           <h1>loading..</h1>
         </div>
-
-        <br><br>
-
-        <div class="teams" id="teams">
-         Select team:
-          <select name="" id="team-select" class="team-select" onclick="Update_team()">
-                  <option value="">?</option>
-                  <option value="red">RED</option>
-                  <option value="blue">BLUE</option>
-          </select><br>
-                  <br><button onclick="accept()">Accept</button>
-        </div>
-
-
-        <br><br>
 
         <div class="characters" id="characters">
          Select Character
@@ -49,9 +33,10 @@
                   <option value="cloe">Cloe</option>
                   <option value="pici catto">Pici Catto</option>
           </select><br>
-
+                <br><button onclick="accept()">Accept</button>
                 <div class="server" id="server">
-                        <br><button id="create-server">🏠 Create game</button><br>
+                        <hr>
+                        <br><button id="create-server" class="create-btn">🏠 Create game</button><br>
                         <br><input type="text" id="code-value"><button id="join-server">🚪 Join game</button>
         </div>  </div>
 </div>

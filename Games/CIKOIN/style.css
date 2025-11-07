@@ -1,141 +1,170 @@
-body{
-        font-family: 'story';
-        text-align: center;
-        padding-top: 8cm;
-}
-select{
-        font-size: 0.4cm;
-        background-color: antiquewhite;
-        border-color: transparent;
-        padding: 0.5cm;
-        border-radius: 15px;
+body {
+  font-family: 'story';
+  text-align: center;
+  padding-top: 6cm;
+  background: #fff9f4; /* soft peach white */
+  color: #333;
 }
 
-input{
-        padding: 0.5cm;
-        border-radius: 15px;
-        transition: 0.4s;
-}
-input textarea {
-        background-color: black;
-}
-/* Displays*/
-.server {
-        display: none;
-}
-.loading{
-        display: none;
-}
-.menu {
-        display: block;
-}
-.room {
-        display: none;
-}
-.characters {
-        display: none;
-}
-.teams{
-        display: none;
-}
-.team-select{
-        font-size: 0.4cm;
-        border-color: black;
-        border-style: dashed;
-        background-color: rgb(255, 255, 255);
+/* Startup visibility control */
+.menu { display: block; }
+.loading,
+.characters,
+.server,
+.room,
+#game {
+  display: none;
 }
 
+/* Title */
+h1 {
+  font-size: 1.7cm;
+  margin-bottom: 0.4cm;
+  color: #ffdedc;
+  text-shadow: 0 3px 0 #cf6666;
+}
+
+
+/* Loading animation */
+.loading h1 {
+  color: #ffffff;
+  font-size: 1.2cm;
+  animation: blink 0.8s infinite;
+}
+@keyframes blink {
+  50% { opacity: 0.4; }
+}
+
+/* Inputs & Selects */
+select, input {
+  font-size: 0.42cm;
+  background: #ffe8d2;
+  border: none;
+  padding: 0.45cm 0.6cm;
+  border-radius: 14px;
+  box-shadow: 0 3px 0px #e6c8a1;
+  transition: 0.25s;
+  cursor: pointer;
+}
+
+/* Cute dropdown arrow */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px;
+}
+
+/* Dropdown options */
 select option {
-        border-radius: 15px;
-        border-bottom: transparent;
+  background: #fff7e8;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.42cm;
+  color: #4b3b29;
+  transition: background 0.2s;
+}
+select option:hover { background: #ffdcbf; }
+select option:checked { background: #ffd1aa; font-weight: bold; }
+
+/* Focus animations */
+select:focus, input:focus {
+  outline: none;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0px #e1b48e;
+}
+select:hover, input:hover {
+  background: #ffd9b5;
+  transform: translateY(-1px);
 }
 
-button{
-        box-sizing: border-box;
-        display: inline-block;
-        padding: 0.6rem 1rem;
-        font-size: clamp(0.9rem, 3.5vw, 1.2rem);
-        color: #fff;
-        background-color: rgb(91, 192, 91);
-        border: none;
-        border-radius: 9999px;
-        min-height: 44px; /* minimum touch target */
-        line-height: 1;
-        cursor: pointer;
-        transition: transform 0.18s ease, opacity 0.18s ease;
-        -webkit-tap-highlight-color: transparent;
-        touch-action: manipulation;
+/* Scrollbar (desktop only) */
+select::-webkit-scrollbar { width: 10px; }
+select::-webkit-scrollbar-track { background: #fff3e3; border-radius: 10px; }
+select::-webkit-scrollbar-thumb { background: #ffbe8f; border-radius: 10px; }
+select::-webkit-scrollbar-thumb:hover { background: #ffa76d; }
+
+/* Candy buttons */
+button {
+  display: inline-block;
+  padding: 0.55rem 1.25rem;
+  font-size: 1rem;
+  color: #fff;
+  background: #8ddfa2;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 4px 0px #6bb883;
+  transition: 0.18s;
+  -webkit-tap-highlight-color: transparent;
+}
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0px #5ba573;
+}
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0px #5ba573;
 }
 
-button:hover{
-        opacity: 0.95;
+/* Create room button */
+.create-btn {
+  background-color: #6e7cff;
+  box-shadow: 0 4px 0px #505dcf;
+  font-size: 0.82rem;
+  padding: 0.45rem 1.2rem;
+}
+.create-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 0px #4550b3;
 }
 
-button:active{
-        transform: scale(0.99);
-        opacity: 0.9;
-}
-
-button:focus-visible{
-        outline: 3px solid rgba(91,192,91,0.28);
-        outline-offset: 2px;
-}
-
-/* Mobile: make buttons easier to tap and layout-friendly */
-@media (max-width: 480px){
-        button{
-                display: block;
-                width: calc(100% - 2rem);
-                margin: 0.6rem auto;
-                padding: 0.9rem 1rem;
-                font-size: 1rem;
-                border-radius: 14px; /* slightly less extreme on small screens */
-        }
-}
-.team-select [value="red"] {
-        color: white;
-        background-color: red;
-        border-color: red;
-}
-.team-select [value="blue"] {
-        color: white;
-        background-color: blue;
-        border-color: blue;
-}
-.map {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;     /* full width */
-  height: 100vh;    /* full height */
-  background: #7ecf7e73; /* cute grass */
-  overflow: hidden;
-}
-.start_match {
-        position: absolute;
-        top: 60%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-}
-/* character images */
-.player-sprite {
-  width: 18vw;   /* responsive size */
-  max-width: 140px;
-  aspect-ratio: 1 / 1;
-  position: absolute;
-  transform: translate(-50%, -50%);
-  image-rendering: pixelated;
-}
-
-
+/* Character dropdown special */
 .character-select {
-        font-size: 0.4cm;
-        background-color: rgb(218, 109, 109);
-        color: white;
+  background: #ffb6b6;
+  color: white;
+  box-shadow: 0 4px 0px #d68888;
 }
-/* ANIMATIONS */
 
-input:hover{
-        opacity: 0.5;
-        transition: 0.4s;
+/* Room player list */
+.players {
+  background: #ffefe1;
+  padding: 0.6cm;
+  border-radius: 14px;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.06);
+  min-height: 2cm;
+  width: 6cm;
+  margin: auto;
+}
+
+/* Start match button centered */
+.start_match {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: 0.25s;
+}
+.start_match:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+}
+
+/* Map area */
+.map {
+  width: 100vw;
+  height: 100vh;
+  background: #fef6e8;
+}
+
+/* Responsive layout */
+@media (max-width: 480px) {
+  button {
+    display: block;
+    width: calc(60% - 1rem);
+    margin: 0.7rem auto;
+    font-size: 1rem;
+  }
+  body { padding-top: 3cm; }
 }

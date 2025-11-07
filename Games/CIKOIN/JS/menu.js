@@ -2,23 +2,20 @@ let delay_load;
 let count = 1;
 
 let player = document.getElementById("who-play");
-let team = document.getElementById("team-select");
 let character = document.getElementById("character-select");
 
 let menu_div = document.getElementById("menu");
 let whoplays_div = document.getElementById("who-plays");
 let load_div = document.getElementById("loading");
-let team_div = document.getElementById("teams");
 let character_div = document.getElementById("characters");
 let server_div = document.getElementById("server");
 let room_div = document.getElementById("room");
 
 let your_name = null;
-let your_team = null;
 let your_character = null;
 
 function Update_player() {
-       navigator.vibrate(50);
+       navigator.vibrate(30);
        beep();
         load_div.style.display = "block";
     // Clear old interval if exist
@@ -32,13 +29,6 @@ function Update_player() {
 
 }    
 
-function Update_team() {
-       navigator.vibrate(40);
-       if(team.value == null) return;
-       if(team.value == "red" || team.value ==  "blue") {
-              your_team = team.value,  console.log(your_team);
-       }
-}
 
 function Update_character() {
 
@@ -46,7 +36,7 @@ function Update_character() {
        if(character.value == "ciko" || character.value ==  "cloe" || character.value == "pici catto") {
               your_character = character.value,  console.log(your_character);
               server_div.style.display = "block";
-              navigator.vibrate(50);
+              navigator.vibrate(30);
        }
 }
 
@@ -71,17 +61,16 @@ function start() {
 function loadgame(){
         clearInterval(delay_load);
         load_div.style.display = "none";
-        document.getElementById("teams").style.display = 'block';
+        document.getElementById("characters").style.display = 'block';
         
 }
 
 function accept() {
 
-       if(your_team == null) return;
+       if(your_character == null) return;
        else{
-              team_div.style.display = "none";
               character_div.style.display = "block";
               beep();
-              navigator.vibrate(50);
+              navigator.vibrate(30);
        }
 }

@@ -16,22 +16,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-
-// ===============================================
-// TEAM COLORS
-// ===============================================
-
-const TEAM_COLORS = {
-  red: "#ff4d4d",
-  blue: "#4d79ff",
-  green: "#4dff4d",
-  yellow: "#ffe44d",
-  orange: "#ff9f4d",
-  purple: "#b84dff",
-  pink: "#ff4db8",
-  gray: "#8d8d8d"
-};
-
 // ===============================================
 // ROOM CODE GENERATOR
 // ===============================================
@@ -59,6 +43,7 @@ function listenEnoughPlayer(roomCode) {
       btn.style.opacity = "0.5";
     } else {
       btn.disabled = false;
+      btn.style.pointerEvents = "all";
       btn.style.opacity = "1";
     }
   });
@@ -105,7 +90,6 @@ async function createRoom(username) {
     match_state: "waiting",
     players: {
       [username]: {
-        team: team.value ?? "gray",
         character: character.value ?? "default"
       }
     }
@@ -122,16 +106,11 @@ async function joinRoom(code, username) {
   if (!roomSnap.exists()) return false;
 
   const room = roomSnap.val();
-  const newTeam = team.value ?? "gray";
 
   if (room.players && room.players[username]) return "username_taken";
 
-  for (const p in room.players)
-    if (room.players[p].team === newTeam) return "team_taken";
-
   await update(ref(db, `rooms/${code}/players`), {
     [username]: {
-      team: newTeam,
       character: character.value ?? "default"
     }
   });
@@ -155,7 +134,7 @@ function listenForPlayers(roomCode) {
     for (const username in players) {
       const el = document.createElement("div");
       el.textContent = username;
-      el.style.background = TEAM_COLORS[players[username].team];
+      el.style.background = "#ffdab0ff"
       el.style.color = "white";
       el.style.padding = "6px 12px";
       el.style.margin = "4px";
@@ -202,7 +181,6 @@ document.getElementById("join-server").onclick = async () => {
     playgame();
   }
   else if (result === "username_taken") alert("This username is already taken!");
-  else if (result === "team_taken") alert("This team is already chosen!");
   else alert("Room not found!");
 };
 

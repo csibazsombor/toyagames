@@ -6,8 +6,5 @@ function loadScript(url, isModule = false) {
 }
 
 function loadScripts() {
-  loadScript("./JS/scoring-system.js");
-  loadScript("./JS/skills.js");
   loadScript("./JS/match.js");
-  loadScript("./JS/tr.js", true);
 }
