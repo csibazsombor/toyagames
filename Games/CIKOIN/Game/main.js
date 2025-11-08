@@ -94,6 +94,34 @@ if (ROOM) {
       otherPlayers[name].rot = players[name].rot;
     }
   });
+  
+if (ROOM) {
+
+  // Sync flower states
+  onValue(ref(db, `rooms/${ROOM}/flowers`), snap => {
+    const state = snap.val() || {};
+    flowers.forEach(f => {
+      if (state[f.id] === true && !f.collected) {
+        f.collected = true;
+        scene.remove(f.center);
+        scene.remove(f.stem);
+      }
+    });
+  });
+
+  // Sync chest states
+  onValue(ref(db, `rooms/${ROOM}/chests`), snap => {
+    const state = snap.val() || {};
+    chests.forEach(c => {
+      if (state[c.id] === true && !c.opened) {
+        c.opened = true;
+        scene.remove(c.base);
+      }
+    });
+  });
+
+}
+
 }
 
 
@@ -162,10 +190,8 @@ labelRenderer.domElement.style.pointerEvents = "none";
 labelRenderer.domElement.style.zIndex = "999999"; // <-- important
 document.body.appendChild(labelRenderer.domElement);
 
-const healthFill = document.getElementById("healthFill");
-
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
@@ -184,8 +210,8 @@ sun.shadow.camera.top = 60;
 sun.shadow.camera.bottom = -60;
 sun.shadow.camera.near = 1;
 sun.shadow.camera.far = 120;
-sun.shadow.mapSize.width = 2048;
-sun.shadow.mapSize.height = 2048;
+sun.shadow.mapSize.width = 1024;
+sun.shadow.mapSize.height = 1024;
 scene.add(sun);
 
 /* CUTE MAP */
@@ -250,41 +276,123 @@ for(let i = 0; i < 10; i++) {
   const z = Math.sin(angle) * radius;
   
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.8, 0.8, 4, 8),
+    new THREE.CylinderGeometry(1.4, 1.2, 7, 10), // thicker + taller
     new THREE.MeshStandardMaterial({ color: 0x8b4513 })
   );
-  trunk.position.set(x, 2, z);
+  trunk.position.set(x, 3.5, z); // move up because it’s taller
   trunk.castShadow = true;
   trunk.receiveShadow = true;
   scene.add(trunk);
   
   const leaves = new THREE.Mesh(
-    new THREE.SphereGeometry(3, 8, 8),
+    new THREE.SphereGeometry(5, 12, 12), // bigger leaf puff
     new THREE.MeshStandardMaterial({ color: 0x228b22 })
   );
-  leaves.position.set(x, 5.5, z);
+  leaves.position.set(x, 7, z); // match new trunk height
   leaves.castShadow = true;
   leaves.receiveShadow = true;
   scene.add(leaves);
+
   
   // Add tree collision
   collisionObjects.push({
     mesh: trunk,
-    minX: x - 1.5, maxX: x + 1.5,
-    minZ: z - 1.5, maxZ: z + 1.5,
-    height: 6
+    minX: x - 2.2, maxX: x + 2.2,
+    minZ: z - 2.2, maxZ: z + 2.2,
+    height: 8
+  });
+
+}
+
+// ========== BOUNCY MUSHROOMS ==========
+const mushrooms = [];
+const flowers = [];
+const chests = [];
+const platforms = [];
+const butterflies = [];
+function createMushroom(x, z) {
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.5, 1.2, 12),
+    new THREE.MeshStandardMaterial({ color: 0xfff8dc, roughness: 0.7 })
+  );
+  stem.position.set(x, 0.6, z);
+  stem.castShadow = true;
+  scene.add(stem);
+
+  const cap = new THREE.Mesh(
+    new THREE.SphereGeometry(1.2, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshStandardMaterial({ 
+      color: 0xff1493,
+      emissive: 0xff69b4,
+      emissiveIntensity: 0.2
+    })
+  );
+  cap.position.set(x, 1.5, z);
+  cap.castShadow = true;
+  scene.add(cap);
+
+  mushrooms.push({
+    pos: new THREE.Vector3(x, 0, z),
+    cap: cap    // ✅ Store cap mesh
   });
 }
+
+createMushroom(8, 8);
+createMushroom(-12, 8);
+createMushroom(15, -12);
+createMushroom(-8, -15);
+createMushroom(20, 20);
+
+// ========== FLOWERS (collectible, synced) ==========
+function createFlower(x, z, id) {
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.08, 1, 8),
+    new THREE.MeshStandardMaterial({ color: 0x228b22 })
+  );
+  stem.position.set(x, 0.5, z);
+  scene.add(stem);
+
+  const center = new THREE.Mesh(
+    new THREE.SphereGeometry(0.15, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xffd700 })
+  );
+  center.position.set(x, 1, z);
+  scene.add(center);
+
+  flowers.push({ id, center, stem, pos: new THREE.Vector3(x, 1, z), collected: false });
+}
+for (let i = 0; i < 15; i++) {
+  createFlower((Math.random()-0.5)*60, (Math.random()-0.5)*60, "F"+i);
+}
+
+// ========== TREASURE CHESTS (synced) ==========
+function createChest(x, z, id) {
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 0.8, 1),
+    new THREE.MeshStandardMaterial({ color: 0x8b4513 })
+  );
+  base.position.set(x, 0.4, z);
+  base.castShadow = true;
+  scene.add(base);
+
+  chests.push({ id, base, opened: false, pos: new THREE.Vector3(x, 0, z) });
+}
+createChest(5,-5,"C1");
+createChest(-18,5,"C2");
+createChest(22,-8,"C3");
+createChest(-10,-20,"C4");
+
 
 /* =========================================================
    PICKUPS: COINS + POWERUPS
 ========================================================= */
+
 const coins = [];
 function spawnCoin() {
   const coin = new THREE.Mesh(
     new THREE.CylinderGeometry(0.5, 0.5, 0.1, 16),
     new THREE.MeshStandardMaterial({ 
-      color: 0xffd700, metalness: 0.8, roughness: 0.2,
+      color: 0xffd700, metalness: 0.4, roughness: 0.2,
       emissive: 0xffaa00, emissiveIntensity: 0.3
     })
   );
@@ -330,6 +438,31 @@ function spawnPowerup() {
 }
 for (let i=0;i<6;i++) spawnPowerup();
 
+const potionsList = [];
+
+function spawnPotion() {
+  const bottle = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.25, 0.7, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xff4d6d,
+      emissive: 0xff4d6d,
+      emissiveIntensity: 0.4,
+      roughness: 0.8,
+    })
+  );
+  bottle.position.set(
+    (Math.random() - 0.5) * 70,
+    1.1,
+    (Math.random() - 0.5) * 70
+  );
+  bottle.castShadow = true;
+  scene.add(bottle);
+  potionsList.push({ mesh: bottle, collected: false });
+}
+
+// Spawn 2 potions around map
+for (let i = 0; i < 2; i++) spawnPotion();
+
 /* =========================================================
    CLOUDS
 ========================================================= */
@@ -355,7 +488,7 @@ for(let i = 0; i < 8; i++) {
     15 + Math.random() * 10,
     (Math.random() - 0.5) * 150
   );
-  scene.add(cloudGroup);
+  scene.add(cloudGroup);  
   clouds.push({
     group: cloudGroup,
     speed: 0.5 + Math.random() * 1,
@@ -373,8 +506,10 @@ scene.add(playerRoot);
 // Player collision capsule
 const PLAYER_RADIUS = 0.5;
 const PLAYER_HEIGHT = 1.7;
+const PLAYER_COLLISION_RADIUS = 0.8; // how close players can get before pushing
 
 let model;
+let walkTime = 0;
 
 const MODEL_FACE_ADJUST = THREE.MathUtils.degToRad(-90);
 
@@ -446,11 +581,22 @@ loader.load(
     fbx.castShadow = true;
     fbx.receiveShadow = true;
     fbx.traverse(child => {
-      if(child.isMesh) {
+      if (child.isMesh && child.material) {
         child.castShadow = true;
         child.receiveShadow = true;
+      
+        // 🌸 Perfect cute matte-toy balance
+        child.material.roughness = 0.32;     // a bit soft
+        child.material.metalness = 0.05;     // tiny highlight
+        child.material.envMapIntensity = 0.8; 
+      
+        // gentle warm self-light so shadows don't darken face
+        child.material.emissive = new THREE.Color(0xffffff);
+        child.material.emissiveIntensity = 0.005;
       }
     });
+
+
     model = fbx;
     playerRoot.add(model);
         // ✅ Store for cloning remote players
@@ -477,6 +623,27 @@ addEventListener("keyup", e => {
   if(k in keys) keys[k] = 0;
   if(e.code === "Space") keys.space = 0;
 });
+
+function usePotion() {
+  if (potions > 0 && health < 100) {
+    potions--;
+    health = Math.min(100, health + 30);
+    updateHP();         // already exists
+    updateInventoryUI();
+  }
+}
+
+function updateInventoryUI() {
+  const inv = document.getElementById("inventory");
+  inv.textContent = `🍎 ${potions}`;
+}
+
+addEventListener("keydown", e => {
+  if (e.key.toLowerCase() === "q") {
+    usePotion();
+  }
+});
+
 
 const moveVec = new THREE.Vector2();
 
@@ -559,6 +726,10 @@ if(isMobile) {
   }, {passive:false});
 }
 
+const potionBtn = document.getElementById("potionBtn");
+potionBtn.style.display = "block";
+potionBtn.onclick = usePotion;
+
 /* =========================================================
    CAMERA
 ========================================================= */
@@ -634,20 +805,25 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🚀 Faster player
-const WALK_BASE = 210;   // was 80
-const RUN_BASE  = 350;   // was 120
+const WALK_BASE = 60;
+const RUN_BASE  = 165;
+
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
 
-const ACCEL = 60, DRAG = 0.88;
+const ACCEL = 140;   // quicker speed gain
+const DRAG = 0.93;   // keep momentum
+
 const GRAVITY = -30;
 const JUMP_FORCE = 9;
 
 let stamina = 5, STAMINA_MAX = 5;
 const DRAIN = 1.0, REGEN_MOVE = 0.7, REGEN_IDLE = 1.8;
 
+// Player stats
 let health = 100; // %
 let invulnTimer = 0;
+let potions = 0;
 
 let isGrounded = true;
 let jumpRequested = false;
@@ -670,28 +846,10 @@ const MAGNET_RADIUS = 12;
 const MAGNET_PULL   = 12; // units/s toward player
 
 
-/* =========================================================
-   LOOP
-========================================================= */
-let last = performance.now();
-
-function loop() {
-        updateHP();
-for (const name in otherPlayers) {
-  const p = otherPlayers[name];
-  if (!p.mesh) continue;
-
-  // Smooth movement
-  p.mesh.position.lerp(new THREE.Vector3(p.x, p.y, p.z), 0.15);
-
-  // Smooth rotation
-const targetQ = new THREE.Quaternion()
-  .setFromAxisAngle(new THREE.Vector3(0,1,0), p.rot + MODEL_FACE_ADJUST);
-p.mesh.quaternion.slerp(targetQ, 0.15);
-
-}
 // Send my position to database
-if (ROOM && USER) {
+let lastSend = 0;
+function sendPlayerData() {
+  if (!ROOM || !USER) return;
   update(ref(db, `rooms/${ROOM}/players/${USER}`), {
     x: playerRoot.position.x,
     y: playerRoot.position.y,
@@ -699,6 +857,46 @@ if (ROOM && USER) {
     rot: playerRoot.rotation.y
   });
 }
+
+/* =========================================================
+   LOOP
+========================================================= */
+let last = performance.now();
+
+function loop() {
+
+  updateHP();
+
+  const now = performance.now();
+  const dt = Math.min(0.033, (now - last) / 1000);
+  last = now;
+
+// ✅ Remote walk animation
+for (const name in otherPlayers) {
+  const p = otherPlayers[name];
+  if (!p.mesh) continue;
+
+  const isRemoteMoving = (
+    Math.abs(p.mesh.position.x - p.x) > 0.01 ||
+    Math.abs(p.mesh.position.z - p.z) > 0.01
+  );
+
+  if (!p.walkTime) p.walkTime = 0;
+
+  if (isRemoteMoving) {
+    p.walkTime += dt * 3; // slower animation
+    const bob = Math.sin(p.walkTime) * 0.03;
+    const sway = Math.sin(p.walkTime * 2) * 0.03;
+    p.mesh.position.y = bob;
+    p.mesh.rotation.z = sway;
+  } else {
+    p.mesh.position.y += (0 - p.mesh.position.y) * 0.12;
+    p.mesh.rotation.z += (0 - p.mesh.rotation.z) * 0.12;
+  }
+}
+
+
+
 
 // Smoothly move remote players
 for (const name in otherPlayers) {
@@ -713,10 +911,13 @@ for (const name in otherPlayers) {
   p.mesh.quaternion.slerp(targetRot, 0.15);
 }
 
-  const now = performance.now();
-  const dt = Math.min(0.033, (now - last) / 1000);
-  last = now;
 
+
+  // Send to Firebase only every 100ms (10/s instead of 60)
+  if (now - lastSend > 100) {
+    sendPlayerData();
+    lastSend = now;
+  }
   // Animate clouds
   clouds.forEach(cloud => {
     cloud.group.position.x += cloud.speed * dt;
@@ -760,6 +961,57 @@ for (const name in otherPlayers) {
       }
     }
   });
+    // Collect flowers
+    flowers.forEach(f => {
+      if (f.collected) return;
+      if (playerRoot.position.distanceTo(f.pos) < 1.4) {
+        f.collected = true;
+        scene.remove(f.center);
+        scene.remove(f.stem);
+        coinsCollected += 3;
+        if (ROOM) set(ref(db, `rooms/${ROOM}/flowers/${f.id}`), true);
+      }
+    });
+
+    // Open chests
+    chests.forEach(c => {
+      if (c.opened) return;
+      if (playerRoot.position.distanceTo(c.pos) < 2.0) {
+        c.opened = true;
+        scene.remove(c.base);
+        coinsCollected += 10;
+        if (ROOM) set(ref(db, `rooms/${ROOM}/chests/${c.id}`), true);
+      }
+    });
+
+    // Bounce Mushrooms (juicy)
+    mushrooms.forEach(m => {
+      const dist = playerRoot.position.distanceTo(m.pos);
+      if (dist < 1.6 && isGrounded) {
+        verticalVel = 17; // stronger bounce
+        isGrounded = false;
+      
+        // ✅ Animate mushroom cap (cute squash effect)
+        m.cap.scale.set(1.3, 0.5, 1.3);
+        setTimeout(() => {
+          m.cap.scale.set(1, 1, 1);
+        }, 150);
+      }
+    });
+
+
+    // Collect potions
+    potionsList.forEach((p) => {
+      if (p.collected) return;
+      const dist = playerRoot.position.distanceTo(p.mesh.position);
+      if (dist < 1.4) {
+        p.collected = true;
+        scene.remove(p.mesh);
+        potions++;
+        updateInventoryUI();
+        setTimeout(spawnPotion, 6000); // respawn after delay
+      }
+    });
 
   // Animate & collect powerups
   powerUps.forEach((p, i) => {
@@ -815,10 +1067,11 @@ for (const name in otherPlayers) {
     .addScaledVector(forward, iy);
 
   const moving = input.lengthSq() > 0.0004;
-  const sprint = moving && (isMobile || stamina > 0);
+  let sprint = moving && stamina > 0.1;
+
 
   // Effective speeds
-  const speedMult = (powerUpActive ? 1.25 : 1) * (speedBoostTimer>0 ? 1.35 : 1);
+  const speedMult = (powerUpActive ? 1.35 : 1) * (speedBoostTimer>0 ? 1.55 : 1);
   const targetSpeed = (sprint ? RUN : WALK) * speedMult;
 
   // Horizontal movement
@@ -858,6 +1111,31 @@ for (const name in otherPlayers) {
 
   // Apply position
   playerRoot.position.copy(newPos);
+    // ✅ Multiplayer player-to-player collision
+    for (const name in otherPlayers) {
+      const p = otherPlayers[name];
+      if (!p.mesh) continue;
+    
+      const dx = playerRoot.position.x - p.x;
+      const dz = playerRoot.position.z - p.z;
+      const distSq = dx*dx + dz*dz;
+    
+      if (distSq < PLAYER_COLLISION_RADIUS * PLAYER_COLLISION_RADIUS) {
+        const dist = Math.sqrt(distSq) || 0.001;
+        const overlap = PLAYER_COLLISION_RADIUS - dist;
+      
+        const pushX = (dx / dist) * (overlap * 0.5);
+        const pushZ = (dz / dist) * (overlap * 0.5);
+      
+        // Push me
+        playerRoot.position.x += pushX;
+        playerRoot.position.z += pushZ;
+      
+        // Push the remote visually (optional, smooth)
+        p.mesh.position.x -= pushX * 0.4;
+        p.mesh.position.z -= pushZ * 0.4;
+      }
+    }
 
   // Ground check
   if(playerRoot.position.y <= 0) {
@@ -875,17 +1153,43 @@ for (const name in otherPlayers) {
       0.2
     );
   }
+    // ✅ Walk cycle animation
+    if (moving) {
+      if (model) {
+        walkTime += dt * (sprint ? 5 : 3); // slower walk + sprint scale
+        const bob = Math.sin(walkTime) * 0.03;   // smaller up/down
+        const sway = Math.sin(walkTime * 2) * 0.03; // smaller tilt
+        model.position.y = bob;
+        model.rotation.z = sway;
+      }
+    } else {
+      if (model) {
+        model.position.y += (0 - model.position.y) * 0.12;
+        model.rotation.z += (0 - model.rotation.z) * 0.12;
+      }
+    }
 
-  // Stamina
-  if(sprint) {
-    const drainRate = isMobile ? DRAIN * 0.6 : DRAIN;
-    stamina -= drainRate * dt;
-  } else if(moving) {
-    stamina += REGEN_MOVE * dt;
-  } else {
-    stamina += REGEN_IDLE * dt;
-  }
-  stamina = Math.max(0, Math.min(STAMINA_MAX, stamina));
+
+
+    // Stamina
+    if (moving) {
+      if (sprint && stamina > 0.1) {
+        stamina -= DRAIN * dt; // drain stamina while sprinting
+      } else {
+        stamina += REGEN_MOVE * dt; // regen slowly while moving
+      }
+    } else {
+      stamina += REGEN_IDLE * dt; // regen quickly when standing still
+    }
+
+    stamina = Math.max(0, Math.min(STAMINA_MAX, stamina));
+
+    // If stamina is empty, force walk
+    if (stamina <= 0.1) {
+      sprint = false;
+    }
+
+
   staminaFill.style.width = `${(stamina/STAMINA_MAX) * 100}%`;
   if(stamina < 1) {
     staminaFill.style.background = "linear-gradient(90deg, #ef4444, #dc2626)";
@@ -904,6 +1208,7 @@ for (const name in otherPlayers) {
     labelRenderer.render(scene, camera);
 
     return; // stop updating
+    
   }
 
   // Camera follow
