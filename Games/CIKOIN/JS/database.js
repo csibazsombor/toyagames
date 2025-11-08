@@ -90,6 +90,14 @@ async function createRoom(username) {
   return roomCode;
 }
 
+function setRoomCodeDisplay(code){
+  const el = document.getElementById("room-code");
+  el.dataset.code = code;                        // <-- FIX
+  el.textContent = "Room code: " + code;
+  el.style.display = "block";
+  document.getElementById("players").style.display = "block";
+}
+
 // ===============================================
 // JOIN ROOM
 // ===============================================
@@ -147,7 +155,7 @@ document.getElementById("create-server").onclick = async () => {
   localStorage.setItem("room_code", code); // save
 
   // ✅ Show UI before playgame
-  document.getElementById("room-code").textContent = "Room code: " + code;
+  setRoomCodeDisplay(code);
   document.getElementById("room-code").style.display = "block";
   document.getElementById("players").style.display = "block";
 
@@ -172,7 +180,7 @@ document.getElementById("join-server").onclick = async () => {
     localStorage.setItem("room_code", code); // save
 
     // ✅ Show UI before playgame
-    document.getElementById("room-code").textContent = "Room code: " + code;
+    setRoomCodeDisplay(code);
     document.getElementById("room-code").style.display = "block";
     document.getElementById("players").style.display = "block";
 

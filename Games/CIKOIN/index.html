@@ -42,7 +42,54 @@
 </div>
         <div class="game">
                 <div class="room" id="room">
-                        <h2 id="room-code">room code:</h2>
+                        <h2 id="room-code" data-code="">room code:</h2>
+                        <button id="share-room" type="button" title="Share room">Share</button>
+                        <script>
+                        (function(){
+                            const shareBtn = document.getElementById('share-room');
+                            const roomEl = document.getElementById('room-code');
+                        
+                            // FIX: read from dataset, and stop if empty
+                            function getRoomCode(){
+                                const code = roomEl.dataset.code;
+                                if(!code || code.trim() === ""){
+                                    alert("Room code not set yet!");
+                                    return null;
+                                }
+                                return code.trim();
+                            }
+                    
+                            shareBtn.addEventListener('click', async () => {
+                        
+                                const code = getRoomCode();
+                                if(!code) return; // stop if no code
+                        
+                                const shareText = 'Join my CIKOIN room: ' + code;
+                                const shareUrl = `${location.origin}${location.pathname}?room=${encodeURIComponent(code)}`;
+                        
+                                try {
+                                    if (navigator.share){
+                                        await navigator.share({ title: 'CIKOIN — Join room', text: shareText, url: shareUrl });
+                                    } else if (navigator.clipboard && navigator.clipboard.writeText){
+                                        await navigator.clipboard.writeText(shareUrl);
+                                        alert('Room link copied to clipboard');
+                                    } else {
+                                        const ta = document.createElement('textarea');
+                                        ta.value = shareUrl;
+                                        document.body.appendChild(ta);
+                                        ta.select();
+                                        document.execCommand('copy');
+                                        ta.remove();
+                                        alert('Room link copied to clipboard');
+                                    }
+                                } catch (err){
+                                    console.error(err);
+                                    alert('Unable to share automatically.\nLink:\n' + shareUrl);
+                                }
+                            });
+                        })();
+                        </script>
+
                         <div class="players" id="players"></div>
                         <br><br><button class="start_match" id="start_match">Start</button>
                 </div>
