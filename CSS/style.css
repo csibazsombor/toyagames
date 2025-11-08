@@ -1,102 +1,152 @@
-body{
-  background-color: rgb(102, 108, 128);
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  overflow-x: hidden;
-}
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
 
-.header{
-  text-align: center;
-  width: auto;
-  max-width: 90%;
-  margin: 0 auto;  /* Centers the header horizontally */
-  padding: 0.5rem 1.2rem;
-  border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.178);
-}
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
 
-h2{
-  font-size: 0.8cm;
-  font-family: 'story';
-  color: white;
-}
-.games {
-  text-align: center;
-  width: 100%;
-  padding: 20px 0;
-}
+    body {
+      font-family: 'story', sans-serif;
+      text-align: center;
+      padding-top: 2cm;
+      background: linear-gradient(135deg, #e8f0ff, #fff0f8);
+      color: #333;
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
 
-.title-cikoin {
-  font-size: 0.68cm;
-  font-family: 'story';
-}
+    /* Title */
+    h2 {
+      font-size: 1.1cm;
+      margin-bottom: 0.4cm;
+      color: #667eea;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      animation: float 3s ease-in-out infinite;
+    }
 
-.game-container {
-  width: 20%;
-  min-width: 220px;
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: antiquewhite;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  box-sizing: border-box;
-}
+    /* Games section wrapper */
+    .games {
+      text-align: center;
+      width: 100%;
+      padding: 20px 0;
+    }
 
-.game-container a {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  min-height: 44px; /* touch-friendly */
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  text-decoration: none;
-  color: #ffffff;
-  background-color: green;
-  transition: 0.4s;
-  box-sizing: border-box;
-}
+    .title-cikoin {
+      font-size: 0.8cm;
+      margin-bottom: 1.2cm;
+      color: #764ba2;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      animation: fadeInUp 1s ease-out;
+    }
 
-.game-container a:hover {
-  color: #00ff628e;
-  opacity: 0.7;
-  transition: 0.4s;
-}
+    /* Game box */
+    .game-container {
+      width: 20%;
+      min-width: 230px;
+      margin: 1.2rem auto;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0 4px 0px #c5d4f7;
+      box-sizing: border-box;
+      transition: all 0.25s ease;
+      animation: fadeInUp 0.8s ease-out backwards;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
 
-/* Tablets / small desktops */
-@media (max-width: 900px) {
-  .game-container {
-    width: 45%;
-    padding: 16px;
-  }
-  .title-cikoin {
-    font-size: 0.6cm;
-  }
-}
+    .game-container:nth-child(2) { animation-delay: 0.1s; }
+    .game-container:nth-child(3) { animation-delay: 0.2s; }
+    .game-container:nth-child(4) { animation-delay: 0.3s; }
 
-/* Make font and layout smaller / touch-friendly on phones */
-@media (max-width: 600px) {
-  .game-container {
-    width: 75%;
-    padding: 12px;
-    height: auto;
-  }
-  .game-container a {
-    padding: 0.6rem;
-    font-size: 0.95rem;
-    border-radius: 12px;
-  }
-  .title-cikoin {
-    font-size: 0.5cm;
-  }
-}
+    .game-container:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 8px 0px #afc0e8;
+    }
 
-/* Make font smaller on phone */
-@media(max-width: 600px){
-  h2{
-    font-size: 0.55cm;
-  }
-}
+    /* Game icons */
+    .game-icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      display: block;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    .game-container:nth-child(2) .game-icon { animation-delay: 0s; }
+    .game-container:nth-child(3) .game-icon { animation-delay: 0.5s; }
+    .game-container:nth-child(4) .game-icon { animation-delay: 1s; }
+
+    /* Buttons */
+    .game-container a {
+      display: inline-block;
+      padding: 0.55rem 1.25rem;
+      font-size: 1rem;
+      color: #fff;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 9999px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 4px 0px #5a3d8a;
+      transition: 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .game-container a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0px #4d3275;
+    }
+
+    .game-container a:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 0px #4d3275;
+    }
+
+    /* Tablets */
+    @media (max-width: 900px) {
+      .game-container {
+        width: 45%;
+        padding: 20px;
+      }
+      .title-cikoin {
+        font-size: 0.65cm;
+      }
+    }
+
+    /* Phones */
+    @media (max-width: 600px) {
+      body {
+        padding-top: 3cm;
+      }
+      .game-container {
+        width: 80%;
+        padding: 18px;
+      }
+      .game-container a {
+        display: block;
+        width: calc(100% - 2rem);
+        margin: 0 auto;
+        padding: 0.65rem;
+        font-size: 1rem;
+      }
+      .title-cikoin {
+        font-size: 0.55cm;
+      }
+      h2 {
+        font-size: 0.85cm;
+      }
+      .game-icon {
+        font-size: 2rem;
+      }
+    }
