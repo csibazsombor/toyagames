@@ -3,6 +3,7 @@ import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
 const firebaseConfig = { 
   apiKey: "AIzaSyAw2Z3KybdR_CJQ1e2_HnHAgKqC1WWxCRk", 
   authDomain: "cikoin-firebase.firebaseapp.com", 
@@ -13,12 +14,14 @@ const firebaseConfig = {
   measurementId: "G-74S2WKXHLH" }; 
   const app = initializeApp(firebaseConfig); 
   const db = getDatabase(app); 
+
   // Room + Username 
   const ROOM = localStorage.getItem("room_code"); const USER = localStorage.getItem("username") || ("Player" + Math.floor(Math.random()*999));
   let isHost = false;
-onValue(ref(db, `rooms/${ROOM}/host`), snap => {
+  onValue(ref(db, `rooms/${ROOM}/host`), snap => {
   isHost = (snap.val() === USER);
   console.log("Is Host?", isHost);
+
 });
 
 console.log("ROOM:", ROOM);
@@ -57,7 +60,7 @@ function createRemotePlayer() {
     // Temporary placeholder (used only until FBX loads)
     const body = new THREE.Mesh(
       new THREE.CapsuleGeometry(0.4, 0.8, 8, 16),
-      new THREE.MeshStandardMaterial({ color: 0x4db3ff })
+      new THREE.MeshStandardMaterial({ color: 0x4db3ff, roughness: 0.8 })
     );
     body.position.y = 0.9;
     grp.add(body);
@@ -663,79 +666,9 @@ let magnetTimer = 0;
 let highJumpTimer = 0;
 
 // Magnet parameters
-const MAGNET_RADIUS = 6;
+const MAGNET_RADIUS = 12;
 const MAGNET_PULL   = 12; // units/s toward player
 
-/* =========================================================
-   ENEMIES (example)
-========================================================= */
-const enemies = [];
-function addEnemyPatrol(pathPoints, speed=1.5, chaseSpeed=2.2, vision=9, stopDist=0.9, color=null) {
-        // palette used when no explicit color is provided
-        const PALETTE = [0xff3b3b, 0x00e5ff, 0x7c3aed, 0xffd700, 0x22c55e, 0xff6b6b, 0xff69b4, 0x98fb98];
-        const chosen = color ? new THREE.Color(color) : new THREE.Color(PALETTE[Math.floor(Math.random() * PALETTE.length)]);
-        const emissiveCol = chosen.clone().multiplyScalar(0.35);
-        const ringTint = chosen.clone().lerp(new THREE.Color(0xffffff), 0.6);
-
-        const enemy = new THREE.Group();
-
-        const coreMat = new THREE.MeshStandardMaterial({
-                color: chosen,
-                emissive: emissiveCol,
-                emissiveIntensity: 0.5,
-                metalness: 0.2
-        });
-        const core = new THREE.Mesh(
-                new THREE.DodecahedronGeometry(0.6),
-                coreMat
-        );
-        core.castShadow = true;
-        enemy.add(core);
-
-        const ringMat = new THREE.MeshStandardMaterial({
-                color: ringTint,
-                metalness: 0.6,
-                roughness: 0.3
-        });
-        const ring = new THREE.Mesh(
-                new THREE.TorusGeometry(1, 0.08, 8, 16),
-                ringMat
-        );
-        ring.rotation.x = Math.PI / 2;
-        enemy.add(ring);
-
-        enemy.position.copy(pathPoints[0]);
-        scene.add(enemy);
-
-        enemies.push({
-                group: enemy,
-                core,
-                ring,
-                path: pathPoints,
-                i: 0,
-                forward: true,
-                speed, chaseSpeed, vision, stopDist,
-                state: "patrol"
-        });
-}
-
-if (isHost && ROOM) {
-  const enemyData = enemies.map(e => ({
-    x: e.group.position.x,
-    y: e.group.position.y,
-    z: e.group.position.z,
-    i: e.i,
-    forward: e.forward,
-    state: e.state
-  }));
-
-  update(ref(db, `rooms/${ROOM}/enemies`), enemyData);
-}
-
-
-// Example paths
-addEnemyPatrol([ new THREE.Vector3(10,0,10), new THREE.Vector3(10,0,-8), new THREE.Vector3(-5,0,-8) ]);
-addEnemyPatrol([ new THREE.Vector3(-20,0,20), new THREE.Vector3(-25,0,5), new THREE.Vector3(-15,0,-10) ], 2.6, 4.0, 14, 1.2);
 
 /* =========================================================
    LOOP
@@ -962,64 +895,6 @@ for (const name in otherPlayers) {
     staminaFill.style.background = "linear-gradient(90deg, #fbbf24, #f59e0b)";
   }
 
-  // Enemy AI
-  invulnTimer = Math.max(0, invulnTimer - dt);
-  enemies.forEach(e => {
-    // Spin ring for style
-    e.ring.rotation.z += dt * 2;
-
-    const toPlayer = new THREE.Vector3().subVectors(playerRoot.position, e.group.position);
-    const dist = toPlayer.length();
-
-    if (dist < e.vision) e.state = "chase";
-    else if (dist > e.vision * 1.4) e.state = "patrol";
-
-    if (e.state === "chase") {
-      toPlayer.normalize();
-      const move = toPlayer.multiplyScalar(e.chaseSpeed * dt);
-      // stop at close range
-      if (dist > e.stopDist) e.group.position.add(move);
-    } else {
-      // patrol between points
-      const target = e.path[e.i];
-      const dir = new THREE.Vector3().subVectors(target, e.group.position);
-      const d = dir.length();
-      if (d < 0.2) {
-        if (e.forward) e.i++; else e.i--;
-        if (e.i >= e.path.length) { e.i = e.path.length - 2; e.forward = false; }
-        if (e.i < 0) { e.i = 1; e.forward = true; }
-      } else {
-        dir.normalize();
-        e.group.position.addScaledVector(dir, e.speed * dt);
-      }
-    }
-    
-
-    // Damage on contact
-    const hitDist = 0.9;
-    if (dist < hitDist && invulnTimer === 0) {
-      if (shieldTimer > 0) {
-        // Consume shield hit (brief effect)
-        shieldTimer = Math.max(0, shieldTimer - 3);
-      } else {
-        health = Math.max(0, health - 15);
-        invulnTimer = 1.0; // 1s invulnerability
-        // Knockback
-        const knock = new THREE.Vector3().subVectors(playerRoot.position, e.group.position).setY(0);
-        if (knock.lengthSq() > 0.0001) {
-          knock.normalize();
-          playerRoot.position.addScaledVector(knock, 1.1);
-          vel.addScaledVector(knock, 20);
-        }
-        // Flicker model
-        const targetObj = model ?? placeholderGroup;
-        targetObj.visible = false;
-        setTimeout(()=>{ targetObj.visible = true; }, 100);
-        setTimeout(()=>{ targetObj.visible = false; }, 200);
-        setTimeout(()=>{ targetObj.visible = true; }, 300);
-      }
-    }
-  });
 
 
   // Lose condition (very simple)

@@ -38,7 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Delete all data before to make everything clear
-localStorage.clear();
+localStorage.removeItem("username");
+localStorage.removeItem("room_code");
 
 function Update_player() {
        navigator.vibrate(30);

@@ -52,9 +52,10 @@ function listenMatchState(roomCode) {
   onValue(ref(db, `rooms/${roomCode}/match_state`), (snap) => {
     if (snap.val() === "running") {
       console.log("🔥 MATCH START SIGNAL RECEIVED");
-      // Initialize the map instead of calling start_match
+        start_match();
       if (window.initializeMap) {
         window.initializeMap(roomCode);
+
       }
     }
   });
@@ -219,6 +220,6 @@ document.getElementById("start_match").onclick = () => {
     alert("Room code missing.");
     return;
   }
-
+  start_match();
   update(ref(db, `rooms/${code}`), { match_state: "running" });
 };
