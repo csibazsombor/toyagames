@@ -1,11 +1,20 @@
 CACHE MANIFEST
-#v1.0.2 change this to force update
+# v1.0.3 — update to force clients to refresh (2025-11-08)
 
 CACHE:
-style.css
+# app shell
 index.html
+style.css
 JS/database.js
 JS/game.js
 JS/loader.js
 JS/menu.js
 JS/sounds.js
+
+NETWORK:
+# anything not listed under CACHE will require the network
+*
+
+FALLBACK:
+# fallback to the app shell when offline
+/ index.html
