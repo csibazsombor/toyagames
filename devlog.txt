@@ -1,7 +1,3 @@
-- Potions
-You can use heal potion, etc. in the match.
 - tasks, teamwork
 - Shop
 After round 3, the shop will appear and you can buy potions, more skills.
-- Map
-A place where the players are battle.
