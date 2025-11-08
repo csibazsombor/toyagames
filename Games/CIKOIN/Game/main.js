@@ -49,6 +49,8 @@ function createRemotePlayer() {
   // If your FBX model is loaded → clone
   if (window.originalPlayerModel) {
     const clone = window.originalPlayerModel.clone(true);
+    clone.rotation.y = MODEL_FACE_ADJUST; // ✅ Make remote face same direction
+
     clone.traverse(obj => {
       if (obj.isMesh) {
         obj.castShadow = true;
@@ -56,6 +58,22 @@ function createRemotePlayer() {
       }
     });
     grp.add(clone);
+    // NAME + RANK LABEL
+    const nameDiv = document.createElement("div");
+    nameDiv.style.color = "white";
+    nameDiv.style.fontWeight = "900";
+    nameDiv.style.fontSize = "18px";
+    nameDiv.style.textShadow = "0 2px 6px rgba(0,0,0,0.6)";
+    nameDiv.style.textAlign = "center";
+    nameDiv.innerHTML = "#?";
+      
+    const label = new CSS2DObject(nameDiv);
+    label.position.set(0, 2.2, 0); 
+    grp.add(label);
+      
+    grp.rankLabel = nameDiv;
+    grp.playerName = null; // we fill this later
+
   } else {
     // Temporary placeholder (used only until FBX loads)
     const body = new THREE.Mesh(
@@ -76,24 +94,33 @@ if (ROOM) {
   onValue(ref(db, `rooms/${ROOM}/players`), snap => {
     const players = snap.val() || {};
 
-    for (const name in players) {
-      if (name === USER) continue; // don't create duplicate of yourself
+for (const name in players) {
+  if (name === USER) continue;
 
-      // Create remote player if not already exists
-      if (!otherPlayers[name]) {
-        otherPlayers[name] = {
-          mesh: createRemotePlayer(),
-          x: 0, y: 0, z: 0, rot: 0
-        };
-      }
+  if (!otherPlayers[name]) {
+    otherPlayers[name] = {
+      mesh: createRemotePlayer(),
+      x: 0, y: 0, z: 0, rot: 0,
+      coins: 0,
+      targetPos: new THREE.Vector3(0,0,0),
+      targetRot: new THREE.Quaternion()
+    };
+  }
 
-      // Store latest network positions
-      otherPlayers[name].x = players[name].x;
-      otherPlayers[name].y = players[name].y;
-      otherPlayers[name].z = players[name].z;
-      otherPlayers[name].rot = players[name].rot;
-    }
-  });
+  otherPlayers[name].x = players[name].x;
+  otherPlayers[name].y = players[name].y;
+  otherPlayers[name].z = players[name].z;
+  otherPlayers[name].rot = players[name].rot;
+
+  // ✅ NEW:
+  otherPlayers[name].coins = players[name].coins || 0;
+
+  // ✅ Also update the label’s name
+  otherPlayers[name].playerName = name;
+
+}
+
+});
   
 if (ROOM) {
 
@@ -345,22 +372,67 @@ createMushroom(20, 20);
 
 // ========== FLOWERS (collectible, synced) ==========
 function createFlower(x, z, id) {
+  const flowerGroup = new THREE.Group();
+  flowerGroup.position.set(x, 0, z);
+  scene.add(flowerGroup);
+
+  // Stem
   const stem = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.05, 0.08, 1, 8),
-    new THREE.MeshStandardMaterial({ color: 0x228b22 })
+    new THREE.CylinderGeometry(0.07, 0.07, 1.4, 6),
+    new THREE.MeshStandardMaterial({ color: 0x1e8c3a })
   );
-  stem.position.set(x, 0.5, z);
-  scene.add(stem);
+  stem.position.y = 0.7;
+  stem.castShadow = true;
+  flowerGroup.add(stem);
 
+  // Flower color variations
+  const petalColors = [
+    0xff99cc, // pastel pink
+    0xffd966, // warm yellow
+    0x87cefa, // sky blue
+    0xff6b6b, // rose red
+    0xc084fc, // lilac purple
+    0x98fb98  // mint green
+  ];
+  const petalColor = petalColors[Math.floor(Math.random() * petalColors.length)];
+
+  // Petals (circle arrangement)
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2;
+    const px = Math.cos(angle) * 0.35;
+    const pz = Math.sin(angle) * 0.35;
+
+    const petal = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 12, 12),
+      new THREE.MeshStandardMaterial({ color: petalColor, roughness: 0.35 })
+    );
+    petal.position.set(px, 1.35, pz);
+    petal.castShadow = true;
+    flowerGroup.add(petal);
+  }
+
+  // Center Ball
   const center = new THREE.Mesh(
-    new THREE.SphereGeometry(0.15, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0xffd700 })
+    new THREE.SphereGeometry(0.15, 12, 12),
+    new THREE.MeshStandardMaterial({
+      color: 0xffe066,
+      emissive: 0xffdd55,
+      emissiveIntensity: 0.35,
+      roughness: 0.2
+    })
   );
-  center.position.set(x, 1, z);
-  scene.add(center);
+  center.position.set(0, 1.35, 0);
+  center.castShadow = true;
+  flowerGroup.add(center);
 
-  flowers.push({ id, center, stem, pos: new THREE.Vector3(x, 1, z), collected: false });
+  flowers.push({
+    id,
+    group: flowerGroup,
+    pos: new THREE.Vector3(x, 1.35, z),
+    collected: false
+  });
 }
+
 for (let i = 0; i < 15; i++) {
   createFlower((Math.random()-0.5)*60, (Math.random()-0.5)*60, "F"+i);
 }
@@ -606,6 +678,21 @@ loader.load(
   err => console.error("Model load failed:", err)
 );
 
+// NAME + RANK LABEL
+const nameDiv = document.createElement("div");
+nameDiv.style.color = "white";
+nameDiv.style.fontWeight = "900";
+nameDiv.style.fontSize = "18px";
+nameDiv.style.textShadow = "0 2px 6px rgba(0,0,0,0.6)";
+nameDiv.style.textAlign = "center";
+nameDiv.innerHTML = `#? ${USER}`;
+
+const nameLabel = new CSS2DObject(nameDiv);
+nameLabel.position.set(0, PLAYER_HEIGHT + 1.1, 0); // above HP bar
+playerRoot.add(nameLabel);
+
+playerRoot.rankLabel = nameDiv; // store reference for updates
+
 /* =========================================================
    INPUT
 ========================================================= */
@@ -850,12 +937,13 @@ const MAGNET_PULL   = 12; // units/s toward player
 let lastSend = 0;
 function sendPlayerData() {
   if (!ROOM || !USER) return;
-  update(ref(db, `rooms/${ROOM}/players/${USER}`), {
-    x: playerRoot.position.x,
-    y: playerRoot.position.y,
-    z: playerRoot.position.z,
-    rot: playerRoot.rotation.y
-  });
+update(ref(db, `rooms/${ROOM}/players/${USER}`), {
+  x: playerRoot.position.x,
+  y: playerRoot.position.y,
+  z: playerRoot.position.z,
+  rot: playerRoot.rotation.y - MODEL_FACE_ADJUST
+});
+
 }
 
 /* =========================================================
@@ -898,26 +986,28 @@ for (const name in otherPlayers) {
 
 
 
-// Smoothly move remote players
 for (const name in otherPlayers) {
   const p = otherPlayers[name];
   if (!p.mesh) continue;
 
-  p.mesh.position.lerp(new THREE.Vector3(p.x, p.y, p.z), 0.18);
+  // Smooth movement
+  p.mesh.position.lerp(new THREE.Vector3(p.x, p.y, p.z), 0.12);
 
-  const targetRot = new THREE.Quaternion()
-    .setFromAxisAngle(new THREE.Vector3(0,1,0), p.rot);
-
-  p.mesh.quaternion.slerp(targetRot, 0.15);
+  // Smooth rotation on group, not model
+  const current = p.mesh.rotation.y;
+  const target = p.rot + MODEL_FACE_ADJUST; // ✅ keeps facing correct
+  p.mesh.rotation.y += (target - current) * 0.18;
 }
 
 
 
+
   // Send to Firebase only every 100ms (10/s instead of 60)
-  if (now - lastSend > 100) {
+  if (now - lastSend > 33) { // ~30 updates/sec
     sendPlayerData();
     lastSend = now;
   }
+
   // Animate clouds
   clouds.forEach(cloud => {
     cloud.group.position.x += cloud.speed * dt;
@@ -940,16 +1030,25 @@ for (const name in otherPlayers) {
       }
     }
 
+    
     // Collect
     const dist = playerRoot.position.distanceTo(coin.mesh.position);
-    if(dist < 1.3) {
+    if (dist < 1.3) {
       coin.collected = true;
-      coinsCollected++;
       scene.remove(coin.mesh);
-      // Re-spawn a coin after a short delay
+    
+      // ✅ Increase local coin count
+      coinsCollected++;
+    
+      // ✅ Write to database
+      if (ROOM) {
+        update(ref(db, `rooms/${ROOM}/players/${USER}`), { coins: coinsCollected });
+      }
+    
+      // ✅ Respawn new coin later
       setTimeout(spawnCoin, 1200);
-
-      // Tiny sparkle
+    
+      // ✨ Sparkle
       for(let j = 0; j < 6; j++) {
         const particle = new THREE.Mesh(
           new THREE.SphereGeometry(0.08),
@@ -960,14 +1059,15 @@ for (const name in otherPlayers) {
         setTimeout(() => scene.remove(particle), 400);
       }
     }
+
   });
+  
     // Collect flowers
     flowers.forEach(f => {
       if (f.collected) return;
       if (playerRoot.position.distanceTo(f.pos) < 1.4) {
         f.collected = true;
-        scene.remove(f.center);
-        scene.remove(f.stem);
+        scene.remove(f.group);
         coinsCollected += 3;
         if (ROOM) set(ref(db, `rooms/${ROOM}/flowers/${f.id}`), true);
       }
@@ -1146,13 +1246,21 @@ for (const name in otherPlayers) {
   }
 
   // Face movement
-  if(moving) {
+  if (moving) {
     const yaw = Math.atan2(input.x, input.z);
-    playerRoot.quaternion.slerp(
-      new THREE.Quaternion().setFromAxisAngle(up, yaw), 
-      0.2
-    );
+
+    // Smooth rotation without snapping
+    const current = playerRoot.rotation.y;
+    const diff = yaw - current;
+
+    // Normalize angle difference (-PI to PI)
+    const wrapped = Math.atan2(Math.sin(diff), Math.cos(diff));
+
+    playerRoot.rotation.y = current + wrapped * 0.15; // 0.1 = slow turn, 0.3 = fast turn
   }
+
+
+  
     // ✅ Walk cycle animation
     if (moving) {
       if (model) {
@@ -1199,6 +1307,28 @@ for (const name in otherPlayers) {
     staminaFill.style.background = "linear-gradient(90deg, #fbbf24, #f59e0b)";
   }
 
+// ===== RANK UPDATE =====
+if (ROOM) {
+  const scoreList = [];
+
+  scoreList.push({ name: USER, coins: coinsCollected, mesh: playerRoot });
+
+  for (const name in otherPlayers) {
+    const p = otherPlayers[name];
+    if (!p.mesh) continue;
+    scoreList.push({ name, coins: p.coins || 0, mesh: p.mesh });
+  }
+
+  scoreList.sort((a, b) => b.coins - a.coins);
+
+  scoreList.forEach((entry, index) => {
+    const rank = index + 1;
+    if (entry.mesh && entry.mesh.rankLabel) {
+      entry.mesh.rankLabel.innerHTML = `#${rank} ${entry.name}`;
+    }
+  });
+}
+
 
 
   // Lose condition (very simple)
@@ -1241,6 +1371,7 @@ for (const name in otherPlayers) {
   requestAnimationFrame(loop);
 }
 loop();
+
 
 addEventListener("resize", () => {
   camera.aspect = innerWidth / innerHeight;
