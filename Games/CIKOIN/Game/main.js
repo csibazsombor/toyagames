@@ -1,6 +1,97 @@
 import * as THREE from "three";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+const firebaseConfig = { 
+  apiKey: "AIzaSyAw2Z3KybdR_CJQ1e2_HnHAgKqC1WWxCRk", 
+  authDomain: "cikoin-firebase.firebaseapp.com", 
+  projectId: "cikoin-firebase", 
+  storageBucket: "cikoin-firebase.appspot.com", 
+  messagingSenderId: "929922401033", 
+  appId: "1:929922401033:web:46b70907bd41748459c9d8", 
+  measurementId: "G-74S2WKXHLH" }; 
+  const app = initializeApp(firebaseConfig); 
+  const db = getDatabase(app); 
+  // Room + Username 
+  const ROOM = localStorage.getItem("room_code"); const USER = localStorage.getItem("username") || ("Player" + Math.floor(Math.random()*999));
+  let isHost = false;
+onValue(ref(db, `rooms/${ROOM}/host`), snap => {
+  isHost = (snap.val() === USER);
+  console.log("Is Host?", isHost);
+});
+
+console.log("ROOM:", ROOM);
+console.log("USER:", USER);
+
+// If no room found, stop multiplayer gracefully
+if (!ROOM) {
+  console.warn("No room_code found in localStorage. Multiplayer disabled.");
+}
+
+// Create remote player dictionary
+const otherPlayers = {};
+
+// Ensure player entry exists in DB
+if (ROOM && USER) {
+  update(ref(db, `rooms/${ROOM}/players/${USER}`), {
+    x: 0, y: 0, z: 0, rot: 0
+  });
+}
+
+// Function to create a remote player clone of your model
+function createRemotePlayer() {
+  const grp = new THREE.Group();
+
+  // If your FBX model is loaded → clone
+  if (window.originalPlayerModel) {
+    const clone = window.originalPlayerModel.clone(true);
+    clone.traverse(obj => {
+      if (obj.isMesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
+    grp.add(clone);
+  } else {
+    // Temporary placeholder (used only until FBX loads)
+    const body = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.4, 0.8, 8, 16),
+      new THREE.MeshStandardMaterial({ color: 0x4db3ff })
+    );
+    body.position.y = 0.9;
+    grp.add(body);
+  }
+
+  grp.position.set(0,0,0);
+  scene.add(grp);
+  return grp;
+}
+
+// Listen to database updates for other players
+if (ROOM) {
+  onValue(ref(db, `rooms/${ROOM}/players`), snap => {
+    const players = snap.val() || {};
+
+    for (const name in players) {
+      if (name === USER) continue; // don't create duplicate of yourself
+
+      // Create remote player if not already exists
+      if (!otherPlayers[name]) {
+        otherPlayers[name] = {
+          mesh: createRemotePlayer(),
+          x: 0, y: 0, z: 0, rot: 0
+        };
+      }
+
+      // Store latest network positions
+      otherPlayers[name].x = players[name].x;
+      otherPlayers[name].y = players[name].y;
+      otherPlayers[name].z = players[name].z;
+      otherPlayers[name].rot = players[name].rot;
+    }
+  });
+}
 
 
 /* =========================================================
@@ -303,6 +394,7 @@ head.castShadow = true;
 placeholderGroup.add(head);
 playerRoot.add(placeholderGroup);
 
+
 // Floating HP Bar Above Player
 const hpBarContainer = document.createElement("div");
 hpBarContainer.style.position = "absolute";
@@ -358,6 +450,8 @@ loader.load(
     });
     model = fbx;
     playerRoot.add(model);
+        // ✅ Store for cloning remote players
+    window.originalPlayerModel = fbx;
   },
   undefined,
   err => console.error("Model load failed:", err)
@@ -625,6 +719,20 @@ function addEnemyPatrol(pathPoints, speed=1.5, chaseSpeed=2.2, vision=9, stopDis
         });
 }
 
+if (isHost && ROOM) {
+  const enemyData = enemies.map(e => ({
+    x: e.group.position.x,
+    y: e.group.position.y,
+    z: e.group.position.z,
+    i: e.i,
+    forward: e.forward,
+    state: e.state
+  }));
+
+  update(ref(db, `rooms/${ROOM}/enemies`), enemyData);
+}
+
+
 // Example paths
 addEnemyPatrol([ new THREE.Vector3(10,0,10), new THREE.Vector3(10,0,-8), new THREE.Vector3(-5,0,-8) ]);
 addEnemyPatrol([ new THREE.Vector3(-20,0,20), new THREE.Vector3(-25,0,5), new THREE.Vector3(-15,0,-10) ], 2.6, 4.0, 14, 1.2);
@@ -636,6 +744,41 @@ let last = performance.now();
 
 function loop() {
         updateHP();
+for (const name in otherPlayers) {
+  const p = otherPlayers[name];
+  if (!p.mesh) continue;
+
+  // Smooth movement
+  p.mesh.position.lerp(new THREE.Vector3(p.x, p.y, p.z), 0.15);
+
+  // Smooth rotation
+const targetQ = new THREE.Quaternion()
+  .setFromAxisAngle(new THREE.Vector3(0,1,0), p.rot + MODEL_FACE_ADJUST);
+p.mesh.quaternion.slerp(targetQ, 0.15);
+
+}
+// Send my position to database
+if (ROOM && USER) {
+  update(ref(db, `rooms/${ROOM}/players/${USER}`), {
+    x: playerRoot.position.x,
+    y: playerRoot.position.y,
+    z: playerRoot.position.z,
+    rot: playerRoot.rotation.y
+  });
+}
+
+// Smoothly move remote players
+for (const name in otherPlayers) {
+  const p = otherPlayers[name];
+  if (!p.mesh) continue;
+
+  p.mesh.position.lerp(new THREE.Vector3(p.x, p.y, p.z), 0.18);
+
+  const targetRot = new THREE.Quaternion()
+    .setFromAxisAngle(new THREE.Vector3(0,1,0), p.rot);
+
+  p.mesh.quaternion.slerp(targetRot, 0.15);
+}
 
   const now = performance.now();
   const dt = Math.min(0.033, (now - last) / 1000);
@@ -850,6 +993,7 @@ function loop() {
         e.group.position.addScaledVector(dir, e.speed * dt);
       }
     }
+    
 
     // Damage on contact
     const hitDist = 0.9;

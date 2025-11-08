@@ -17,6 +17,7 @@ let your_character = null;
 function Update_player() {
        navigator.vibrate(30);
        beep();
+       localStorage.setItem("username", your_name);
         load_div.style.display = "block";
     // Clear old interval if exist
     if (delay_load) clearInterval(delay_load)
