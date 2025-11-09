@@ -10,7 +10,6 @@
 * { margin:0; padding:0; box-sizing:border-box; }
 html, body { height:100%; }
 :root{
-  /* iOS safe areas */
   --inset-top: env(safe-area-inset-top, 0px);
   --inset-right: env(safe-area-inset-right, 0px);
   --inset-bottom: env(safe-area-inset-bottom, 0px);
@@ -23,20 +22,15 @@ body {
   overflow:hidden; 
   font-family:'Comic Sans MS','Chalkboard SE','Arial Rounded MT Bold',cursive;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  /* Don’t accidentally select text / long-press on mobile */
   user-select: none;
   -webkit-user-select: none;
-  -ms-user-select: none;
-  -webkit-touch-callout: none;
   touch-action: none;
 }
 
-/* Remove focus outlines for UI buttons (keyboard nav not needed here) */
-button, [role="button"], input, select, textarea {
-  outline: none;
-}
+/* Remove focus outlines */
+button, input, select, textarea { outline: none; }
 
-/* ====== Game canvas ====== */
+/* ====== Game Canvas ====== */
 canvas {
   position: fixed;
   inset: 0;
@@ -44,115 +38,141 @@ canvas {
   height: 100vh;
   display:block;
   z-index: 1;
-  /* allow mouse/touch interaction with the game */
   pointer-events: auto;
 }
 
-/* ====== Shared UI layer ====== */
-#ui, #stamina, #controls, #gamepad, #stick, #jumpBtn,
-#inventory, #potionBtn, #loading-screen {
+/* ====== Shared UI Layer ====== */
+#ui, #stamina, #controls, #gamepad, #stick, #jumpBtn, #inventory, #potionBtn, #loading-screen, #teamScore {
   position: relative;
   z-index: 10;
+  user-select:none;
 }
 
-/* Keep CSS2D labels click-through */
-.hp-label { pointer-events:none; }
-
-/* ====== Loading screen ====== */
+/* ====== Loading Screen ====== */
 #loading-screen {
   position: fixed;
   inset: 0;
   background: linear-gradient(135deg, #89cff0, #b19cff);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   gap: 18px;
-  z-index: 9999999;
   color: white;
+  z-index: 9999999;
   transition: opacity 0.6s ease;
 }
 
-/* ====== Debug / Counter HUD (coins etc.) ====== */
-/* Desktop: top-left; Mobile: top-left but pushed below stamina so they never overlap */
+/* TEAM SCORE (Small + Center Top on all devices) */
+#teamScore {
+  position: fixed;
+  top: calc(var(--inset-top) + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  
+  padding: 6px 16px;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(10px);
+
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255,255,255,0.5);
+
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+/* Optional: tiny gentle pulse, not too flashy */
+#teamScore {
+  animation: scorePulse 2s ease-in-out infinite alternate;
+}
+@keyframes scorePulse {
+  from { filter: drop-shadow(0 0 4px rgba(255,255,255,0.3)); }
+  to   { filter: drop-shadow(0 0 10px rgba(255,255,255,0.65)); }
+}
+/* Move Team Score slightly lower on mobile */
+@media (max-width: 768px) {
+  #teamScore {
+    top: calc(var(--inset-top) + 48px); /* was 14px → now lower */
+    font-size: 17px;
+    padding: 6px 14px;
+  }
+}
+
+
+/* ====== Debug HUD (#ui) ====== */
 #ui {
   position: fixed;
   top: calc(var(--inset-top) + 16px);
   left: calc(var(--inset-left) + 16px);
   color:#fff;
   text-shadow:0 3px 6px rgba(0,0,0,0.4);
-  font-size:16px;
-  font-weight:bold;
-  background:rgba(255,255,255,0.16);
+  font-size:16px; font-weight:bold;
   padding:12px 18px;
+  background:rgba(255,255,255,0.16);
   border-radius:16px;
-  backdrop-filter:blur(10px);
   border:3px solid rgba(255,255,255,0.28);
+  backdrop-filter:blur(10px);
   pointer-events:none;
 }
 
-/* ====== Stamina bar ====== */
-/* Desktop: bottom-center; Mobile: top-center (under safe area) */
+/* ====== Stamina Bar ====== */
 #stamina {
   position: fixed;
   width: 320px;
   height: 28px;
-  left: 50%;
-  transform: translateX(-50%);
+  left:50%; transform:translateX(-50%);
+  bottom: calc(var(--inset-bottom) + 60px);
   background: rgba(255,255,255,0.2);
-  border: 3px solid rgba(255,255,255,0.5);
   border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-  backdrop-filter: blur(12px);
-  pointer-events: none;
-  bottom: calc(var(--inset-bottom) + 60px); /* desktop default */
+  border: 3px solid rgba(255,255,255,0.55);
+  backdrop-filter:blur(12px);
+  overflow:hidden;
 }
 #staminaFill {
   height:100%;
   background: linear-gradient(90deg, #fbbf24, #f59e0b);
-  transition: width 0.15s ease-out;
-  box-shadow: inset 0 0 20px rgba(255,255,255,0.3);
+  transition: width 0.25s ease;
 }
 
-/* ====== Inventory readout ====== */
+/* ====== Inventory Display ====== */
 #inventory {
   position: fixed;
   bottom: calc(var(--inset-bottom) + 110px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 50%; transform: translateX(-50%);
   padding: 10px 18px;
-  font-size: 20px;
-  font-weight: bold;
-  color: white;
   background: rgba(255,255,255,0.25);
-  border: 3px solid rgba(255,255,255,0.6);
   border-radius: 20px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  pointer-events: none;
+  border:3px solid rgba(255,255,255,0.6);
+  backdrop-filter:blur(10px);
+  font-size:20px;
+  font-weight:bold;
+  color:white;
+  box-shadow:0 6px 18px rgba(0,0,0,0.25);
+  pointer-events:none;
 }
 
-/* ====== Potion button (mobile) ====== */
+/* ====== Potion Button (Mobile) ====== */
 #potionBtn {
-  display:none; /* enabled by JS on mobile */
+  display:none;
   position: fixed;
   bottom: calc(var(--inset-bottom) + 140px);
   right: calc(var(--inset-right) + 20px);
-  width: 70px; height: 70px;
-  border-radius: 50%;
-  font-size: 26px;
-  font-weight: bold;
-  border: 3px solid rgba(255,255,255,0.7);
-  background: linear-gradient(135deg, #ff6b6b, #fa5252);
-  color: white;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
-  backdrop-filter: blur(12px);
-  z-index: 100;
-  user-select:none;
+  width:70px; height:70px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#ff6b6b,#fa5252);
+  border:3px solid rgba(255,255,255,0.7);
+  color:white;
+  font-size:26px; font-weight:900;
+  backdrop-filter:blur(12px);
+  box-shadow:0 8px 25px rgba(0,0,0,0.3);
 }
 
-/* ====== Desktop controls panel ====== */
+/* ====== Desktop Controls Box ====== */
 #controls {
   position:fixed;
   top: calc(var(--inset-top) + 16px);
@@ -160,133 +180,79 @@ canvas {
   background:rgba(255,255,255,0.16);
   padding:18px;
   border-radius:18px;
+  border:3px solid rgba(255,255,255,0.28);
   color:#fff;
   font-size:13px;
-  max-width:240px;
   pointer-events:none;
   backdrop-filter:blur(10px);
-  border:3px solid rgba(255,255,255,0.28);
   box-shadow:0 8px 20px rgba(0,0,0,0.3);
 }
-#controls h3 { margin-bottom:10px; font-size:16px; color:#fbbf24; }
-#controls .key {
-  display:inline-block;
-  background:rgba(255,255,255,0.3);
-  padding:3px 8px;
-  border-radius:8px;
-  font-weight:bold;
-  margin:0 2px;
-  border:2px solid rgba(255,255,255,0.4);
-}
+#controls h3 { color:#fbbf24; margin-bottom:10px; }
 
-/* ====== Mobile joystick ====== */
+/* ====== Mobile Joystick ====== */
 #gamepad {
-  display:none; /* enabled by JS on mobile */
+  display:none;
   position:fixed;
   bottom: calc(var(--inset-bottom) + 24px);
-  left:  calc(var(--inset-left) + 22px);
-  width: 140px; height: 140px;
+  left: calc(var(--inset-left) + 22px);
+  width:140px; height:140px;
   background:rgba(255,255,255,0.2);
-  border:4px solid rgba(255,255,255,0.4);
   border-radius:50%;
-  touch-action:none;
+  border:4px solid rgba(255,255,255,0.4);
   backdrop-filter:blur(10px);
   box-shadow:0 8px 25px rgba(0,0,0,0.3);
-  user-select:none;
 }
 #stick {
   position:absolute; top:50%; left:50%;
   width:55px; height:55px;
   background:linear-gradient(135deg, #fbbf24, #f59e0b);
-  border:4px solid rgba(255,255,255,0.8);
   border-radius:50%;
+  border:4px solid rgba(255,255,255,0.8);
   transform:translate(-50%,-50%);
-  pointer-events:none;
-  user-select:none;
 }
 
-/* ====== Mobile jump button ====== */
+/* ====== Mobile Jump Button ====== */
 #jumpBtn {
-  display:none; /* enabled by JS on mobile */
+  display:none;
   position:fixed;
   bottom: calc(var(--inset-bottom) + 26px);
-  right:  calc(var(--inset-right) + 24px);
+  right: calc(var(--inset-right) + 24px);
   width:80px; height:80px;
-  background:linear-gradient(135deg, #ec4899, #8b5cf6);
-  border:4px solid rgba(255,255,255,0.5);
+  background:linear-gradient(135deg,#ec4899,#8b5cf6);
   border-radius:50%;
-  color:#fff; font-size:16px; font-weight:bold;
-  box-shadow:0 8px 25px rgba(0,0,0,0.3);
+  border:4px solid rgba(255,255,255,0.5);
+  color:white;
+  font-size:16px; font-weight:bold;
   backdrop-filter:blur(10px);
-  z-index:100;
-  user-select:none;
+  box-shadow:0 8px 25px rgba(0,0,0,0.3);
 }
-#jumpBtn:active { transform:scale(0.90); }
+#jumpBtn:active { transform:scale(0.9); }
 
-/* ====== HP label (if you assign class on your CSS2D labels) ====== */
-.hp-label .hp-bar {
-  width:110px; height:16px; border-radius:10px;
-  background:rgba(0,0,0,0.35); border:2px solid rgba(255,255,255,0.7);
-  position:relative; overflow:hidden;
-}
-.hp-label .hp-fill {
-  position:absolute; left:0; top:0; bottom:0; width:100%;
-  background:linear-gradient(90deg, #22c55e, #16a34a);
-  transition:width .15s ease;
-}
-.hp-label .hp-text {
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  color:#fff; font-size:11px; font-weight:bold; text-shadow:0 2px 4px rgba(0,0,0,.6);
-}
-
-/* ====== Subtle glow (no transform so it won't break centering) ====== */
-#ui, #controls, #stamina, #gamepad, #jumpBtn, #inventory, #potionBtn {
+/* ====== Soft Glow Animation ====== */
+#ui, #teamScore, #stamina, #gamepad, #jumpBtn, #inventory, #potionBtn {
   animation: softGlow 3s ease-in-out infinite alternate;
 }
 @keyframes softGlow {
-  from { filter: drop-shadow(0 0 0px rgba(255,255,255,0.28)); }
-  to   { filter: drop-shadow(0 0 12px rgba(255,255,255,0.55)); }
+  from { filter: drop-shadow(0 0 0 rgba(255,255,255,0.28)); }
+  to   { filter: drop-shadow(0 0 14px rgba(255,255,255,0.55)); }
 }
 
-/* ====== Mobile layout tweaks ====== */
-@media (max-width: 768px) {
-  /* Move stamina to the top center on mobile */
+/* ====== Mobile Layout Tweaks ====== */
+@media (max-width:768px) {
   #stamina {
     top: calc(var(--inset-top) + 10px);
-    bottom: auto;
-    width: min(78vw, 460px);
-    height: 22px;
-    border-width: 3px;
+    bottom:auto;
+    width:min(78vw,460px);
+    height:22px;
   }
-
-  /* Push UI down a bit so it never overlaps stamina */
   #ui {
     top: calc(var(--inset-top) + 42px);
     left: calc(var(--inset-left) + 14px);
-    transform: none;
-    font-size: 15px;
-    padding: 10px 14px;
+    font-size:15px;
+    padding:10px 14px;
   }
-
-  /* Inventory a bit higher to avoid thumb area */
-  #inventory {
-    bottom: calc(var(--inset-bottom) + 110px);
-    font-size: 18px;
-  }
-
-  /* Larger joystick area for thumbs */
-  #gamepad {
-    width: 150px; height: 150px;
-    bottom: calc(var(--inset-bottom) + 22px);
-    left:  calc(var(--inset-left) + 18px);
-  }
-  #stick { width: 60px; height: 60px; }
-
-  /* Jump button stays clear of edges/safe areas */
-  #jumpBtn {
-    bottom: calc(var(--inset-bottom) + 22px);
-    right:  calc(var(--inset-right) + 18px);
-  }
+  #gamepad { width:150px; height:150px; }
+  #stick { width:60px; height:60px; }
 }
 
 </style>
@@ -304,11 +270,11 @@ canvas {
   <div id="loader-percent">0%</div>
 </div>
 </div>
-  <div id="ui">
+
+
+    <div id="teamScore"></div>
     <button id="potionBtn">🍎</button>
     <div id="inventory"></div>
-    <div id="debug"></div>
-  </div>
 
  
   <div id="stamina">

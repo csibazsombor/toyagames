@@ -39,7 +39,14 @@ const otherPlayers = {};
 if (ROOM && USER) {
   update(ref(db, `rooms/${ROOM}/players/${USER}`), {
     x: 0, y: 0, z: 0, rot: 0
+    
   });
+
+  // Everyone is in ONE team (Team Friends)
+  update(ref(db, `rooms/${ROOM}/players/${USER}`), {
+    team: "friends"
+  });
+
 }
 
 // Function to create a remote player clone of your model
@@ -955,6 +962,19 @@ function loop() {
 
   updateHP();
 
+  // Healing when near teammates
+  for (const name in otherPlayers) {
+    const p = otherPlayers[name];
+    if (!p.mesh) continue;
+
+    const dist = playerRoot.position.distanceTo(p.mesh.position);
+
+    if (dist < 3 && health < 100) {
+      health = Math.min(100, health + 10 * dt);
+      updateHP();
+    }
+  }
+
   const now = performance.now();
   const dt = Math.min(0.033, (now - last) / 1000);
   last = now;
@@ -1324,16 +1344,25 @@ if (ROOM) {
   scoreList.forEach((entry, index) => {
     const rank = index + 1;
     if (entry.mesh && entry.mesh.rankLabel) {
+      entry.mesh.rankLabel.style.color = "#ffe8fa";
+      entry.mesh.rankLabel.style.textShadow = "0 0 8px #ffb8b8ff";
       entry.mesh.rankLabel.innerHTML = `#${rank} ${entry.name}`;
+
     }
   });
+  
 }
+
+let teamScore = coinsCollected;
+for (const name in otherPlayers) teamScore += otherPlayers[name].coins || 0;
+document.getElementById("teamScore").textContent = `TEAM SCORE: ${teamScore}`;
+
 
 
 
   // Lose condition (very simple)
   if (health <= 0) {
-    debug.textContent = "💀 You were caught! Reload the page to retry.";
+    //textContent = "💀 You were caught! Reload the page to retry.";
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
 
@@ -1363,7 +1392,7 @@ if (ROOM) {
   if (magnetTimer>0) tags.push(`🧲`);
   if (highJumpTimer>0) tags.push(`🦘`);
   const tagStr = tags.join(" ");
-  debug.textContent = `🪙 ${coinsCollected}   ${p1} ${tagStr}`;
+  //debug.textContent = `🪙 ${coinsCollected}   ${p1} ${tagStr}`;
 
   renderer.render(scene, camera);
   labelRenderer.render(scene, camera); // <-- THIS MAKES HP VISIBLE
