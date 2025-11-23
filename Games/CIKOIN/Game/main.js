@@ -27,25 +27,6 @@ const firebaseConfig = {
   console.log("Is Host?", isHost);
 });
 
-  onChildAdded(ref(db, `rooms/${ROOM}/events`), snap=>{
-  const e = snap.val();
-  if(e.type === "spawnCoin") spawnCoin();
-  if(e.type === "coinBoost") coinBoostTimer = e.duration/1000;
-  if(e.type === "message") showAnnouncement(e.text);
-});
-
-  function showAnnouncement(msg){
-    const a = document.getElementById("announcement");
-    a.textContent = msg;
-    a.style.display = "block";
-    setTimeout(()=>a.style.display="none",3000);
-  }
-
-  function updatePressurePlate(id, active) {
-    if (!ROOM) return;
-    set(ref(db, `rooms/${ROOM}/puzzles/plates/${id}`), active);
-  }
-
 /* =========================================================
    TEAMWORK PUZZLE: Pressure Plates
 ========================================================= */
@@ -106,10 +87,12 @@ function createPressurePlate(x, z, id) {
 }
 
 let puzzleSolved = false;
+let buildProgress = 0;
+let houseBuilt = false;
 
 onValue(ref(db, `rooms/${ROOM}/puzzles/plates`), snap => {
   const state = snap.val() || {};
-  const allPressed = Object.values(state).length === 3 &&
+  const allPressed = Object.values(state).length === 2 &&
                      Object.values(state).every(v => v);
 
   if (allPressed && !puzzleSolved) {
@@ -123,6 +106,21 @@ onValue(ref(db, `rooms/${ROOM}/puzzles/plates`), snap => {
   }
 });
 
+// Restore puzzle portal state from DB on join
+onValue(ref(db, `rooms/${ROOM}/puzzles/solved`), snap => {
+  const solved = snap.val();
+  if (!solved) return;
+
+  puzzleSolved = true;
+  portalActive = true;
+
+  if (portalGroup) {
+    portalGroup.visible = true;
+    portalGlow.visible = true;
+  }
+
+  console.log("✨ Portal already unlocked from previous game!");
+});
 
 
 console.log("ROOM:", ROOM);
@@ -370,8 +368,8 @@ ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
 // Place 3 teamwork puzzle plates
-createPressurePlate(1, 10, "P1");
-createPressurePlate(2, 10, "P2");
+createPressurePlate(-5, 10, "P1");
+createPressurePlate(-1, 10, "P2");
 
   const snowParticles = [];
 
@@ -438,6 +436,199 @@ if (isWinter()) {
 
   createSnowParticles();
 }
+// ========================================
+// SECRET COZY VILLAGE AREA (Hidden until unlocked)
+// ========================================
+const cozyGroup = new THREE.Group();
+cozyGroup.visible = false; // 🔥 NOT visible until portal unlocks
+scene.add(cozyGroup);
+
+function createCozyVillage() {
+  const spawnX = 80;
+  const spawnZ = -40;
+
+  // Ground pad
+  const pad = new THREE.Mesh(
+    new THREE.CircleGeometry(12, 32),
+    new THREE.MeshStandardMaterial({ color: 0xe8d9b5, roughness: 0.9 })
+  );
+  pad.rotation.x = -Math.PI / 2;
+  pad.position.set(spawnX, 0.01, spawnZ);
+  pad.receiveShadow = true;
+  cozyGroup.add(pad);
+
+  // Lamps
+  function lamp(x, z) {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 3, 8),
+      new THREE.MeshStandardMaterial({ color: 0x4a3a21 })
+    );
+    pole.position.set(x, 1.5, z);
+    pole.castShadow = true;
+    cozyGroup.add(pole);
+
+    const light = new THREE.PointLight(0xffddaa, 1.4, 10);
+    light.position.set(x, 3.1, z);
+    light.castShadow = true;
+    cozyGroup.add(light);
+  }
+  lamp(spawnX + 3, spawnZ + 3);
+  lamp(spawnX - 3, spawnZ - 3);
+
+  // Houses
+  function house(x, z, color) {
+    const h = new THREE.Group();
+
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(5, 3, 5),
+      new THREE.MeshStandardMaterial({ color })
+    );
+    base.position.y = 1.5;
+    h.add(base);
+
+    const roof = new THREE.Mesh(
+      new THREE.ConeGeometry(3.7, 2.5, 4),
+      new THREE.MeshStandardMaterial({ color: 0x7a3d15 })
+    );
+    roof.position.y = 4;
+    roof.rotation.y = Math.PI / 4;
+    h.add(roof);
+
+    h.position.set(x, 0, z);
+    h.traverse(o => o.castShadow = true);
+    cozyGroup.add(h);
+  }
+
+  house(spawnX + 8, spawnZ + 6, 0xd4655b);
+  house(spawnX - 8, spawnZ - 6, 0x7dcfb6);
+
+  // Trees
+  for (let i = 0; i < 8; i++) {
+    const x = spawnX + (Math.random() - 0.5) * 25;
+    const z = spawnZ + (Math.random() - 0.5) * 25;
+
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.4, 0.4, 3, 6),
+      new THREE.MeshStandardMaterial({ color: 0x6b3e1d })
+    );
+    trunk.position.set(x, 1.5, z);
+    trunk.castShadow = true;
+    cozyGroup.add(trunk);
+
+    const leaves = new THREE.Mesh(
+      new THREE.SphereGeometry(2.2, 12, 12),
+      new THREE.MeshStandardMaterial({ color: 0x2d7d46 })
+    );
+    leaves.position.set(x, 3.5, z);
+    leaves.castShadow = true;
+    cozyGroup.add(leaves);
+  }
+
+  // Bench
+  const bench = new THREE.Mesh(
+    new THREE.BoxGeometry(4, 0.3, 1),
+    new THREE.MeshStandardMaterial({ color: 0x4f331f })
+  );
+  bench.position.set(spawnX, 0.15, spawnZ - 6);
+  bench.castShadow = true;
+  cozyGroup.add(bench);
+}
+// ===========================================
+// TEAMHOUSE CONSTRUCTION AREA
+// ===========================================
+const buildPlot = new THREE.Mesh(
+  new THREE.PlaneGeometry(6, 6),
+  new THREE.MeshStandardMaterial({
+    color: 0xc9c39f,
+    transparent: true,
+    opacity: 0.6
+  })
+);
+buildPlot.rotation.x = -Math.PI/2;
+buildPlot.position.set(80, 0.02, -55);
+buildPlot.receiveShadow = true;
+cozyGroup.add(buildPlot);
+
+// Build markers where players must stand
+const markA = new THREE.Mesh(
+  new THREE.CircleGeometry(0.6, 16),
+  new THREE.MeshBasicMaterial({ color: 0xff7777 })
+);
+markA.rotation.x = -Math.PI/2;
+markA.position.set(82, 0.03, -55);
+cozyGroup.add(markA);
+
+const markB = new THREE.Mesh(
+  new THREE.CircleGeometry(0.6, 16),
+  new THREE.MeshBasicMaterial({ color: 0x77b5ff })
+);
+markB.rotation.x = -Math.PI/2;
+markB.position.set(78, 0.03, -55);
+cozyGroup.add(markB);
+
+
+// ===========================================
+// TEAMWORK INTERACTABLES
+// ===========================================
+
+// Multiplayer lever puzzle to unlock next area
+let leverA, leverB, teamworkGate;
+let leverState = { A:false, B:false };
+
+function createLever(x, z, id) {
+  const lever = new THREE.Mesh(
+    new THREE.BoxGeometry(0.2,0.8,0.2),
+    new THREE.MeshStandardMaterial({ color:0xaaaaaa })
+  );
+  lever.position.set(x,0.4,z);
+  lever.castShadow = true;
+  cozyGroup.add(lever);
+  lever.userData.id = id;
+  return lever;
+}
+
+leverA = createLever(80 + 4, -40);
+leverB = createLever(80 - 4, -40);
+
+// Gate blocking next expansion
+teamworkGate = new THREE.Mesh(
+  new THREE.BoxGeometry(6,3,0.8),
+  new THREE.MeshStandardMaterial({ color:0x444488 })
+);
+teamworkGate.position.set(80,1.5,-50);
+teamworkGate.castShadow = true;
+cozyGroup.add(teamworkGate);
+
+// 🔥 Fire Pit (team heal)
+const fire = new THREE.Mesh(
+  new THREE.CylinderGeometry(1,1,0.4,12),
+  new THREE.MeshStandardMaterial({ color:0x993300 })
+);
+fire.position.set(75,0.2,-35);
+fire.castShadow = true;
+cozyGroup.add(fire);
+
+// 🍰 Café Table (team reward)
+const table = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.2,1.2,0.2,12),
+  new THREE.MeshStandardMaterial({ color:0xdeb887 })
+);
+table.position.set(85,0.1,-35);
+table.castShadow = true;
+cozyGroup.add(table);
+
+// 🐈 Cat Adoption House
+const catHouse = new THREE.Group();
+const catBase = new THREE.Mesh(
+  new THREE.BoxGeometry(2,1.5,2),
+  new THREE.MeshStandardMaterial({ color:0xffb6c1 })
+);
+catBase.position.set(88,0.75,-45);
+catHouse.add(catBase);
+catHouse.position.set(88,0,-45);
+catHouse.traverse(o=>o.castShadow=true);
+cozyGroup.add(catHouse);
+
 
 
 // 🌈 Cute Soft Modern Grid
@@ -534,112 +725,6 @@ for(let i = 0; i < 10; i++) {
     minZ: z - 2.2, maxZ: z + 2.2,
     height: 8
   });
-// ========================================
-// SECRET COZY AREA (Portal Destination)
-// ========================================
-
-function createCozyVillage() {
-  // Center teleport spawn point
-  const spawnX = 80;
-  const spawnZ = -40;
-
-  // Cozy ground pad
-  const pad = new THREE.Mesh(
-    new THREE.CircleGeometry(12, 32),
-    new THREE.MeshStandardMaterial({ 
-      color: 0xe8d9b5,
-      roughness: 0.9,
-    })
-  );
-  pad.rotation.x = -Math.PI / 2;
-  pad.position.set(spawnX, 0.01, spawnZ);
-  pad.receiveShadow = true;
-  scene.add(pad);
-
-  // 🔥 Warm lamp posts
-  function createLamp(x, z) {
-    const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.15, 0.15, 3, 8),
-      new THREE.MeshStandardMaterial({ color: 0x4a3a21 })
-    );
-    pole.position.set(x, 1.5, z);
-    pole.castShadow = true;
-    scene.add(pole);
-
-    const light = new THREE.PointLight(0xffddaa, 1.4, 10);
-    light.position.set(x, 3.1, z);
-    light.castShadow = true;
-    scene.add(light);
-  }
-
-  createLamp(spawnX + 3, spawnZ + 3);
-  createLamp(spawnX - 3, spawnZ - 3);
-
-  // 🏠 Cute Houses
-  function createHouse(x, z, color) {
-    const house = new THREE.Group();
-
-    const base = new THREE.Mesh(
-      new THREE.BoxGeometry(5, 3, 5),
-      new THREE.MeshStandardMaterial({ color })
-    );
-    base.position.y = 1.5;
-    house.add(base);
-
-    const roof = new THREE.Mesh(
-      new THREE.ConeGeometry(3.7, 2.5, 4),
-      new THREE.MeshStandardMaterial({
-        color: 0x8b4513,
-        roughness: 0.7,
-        metalness: 0.05
-      })
-    );
-    roof.position.y = 4;
-    roof.rotation.y = Math.PI / 4;
-    house.add(roof);
-
-    house.position.set(x, 0, z);
-    house.traverse(o => o.castShadow = true);
-    scene.add(house);
-  }
-
-  createHouse(spawnX + 8, spawnZ + 6, 0xd4655b);
-  createHouse(spawnX - 8, spawnZ - 6, 0x7dcfb6);
-
-  // 🌳 Trees for coziness
-  for (let i=0; i<6; i++){
-    const x = spawnX + (Math.random()-0.5)*20;
-    const z = spawnZ + (Math.random()-0.5)*20;
-    const trunk = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.4,0.4,3,6),
-      new THREE.MeshStandardMaterial({ color:0x6b3e1d })
-    );
-    trunk.position.set(x,1.5,z);
-    trunk.castShadow = true;
-    scene.add(trunk);
-
-    const leaves = new THREE.Mesh(
-      new THREE.SphereGeometry(2.2,12,12),
-      new THREE.MeshStandardMaterial({ color:0x2d7d46 })
-    );
-    leaves.position.set(x,3.5,z);
-    leaves.castShadow = true;
-    scene.add(leaves);
-  }
-
-  // 🍹 Sitting bench
-  const bench = new THREE.Mesh(
-    new THREE.BoxGeometry(4, 0.3, 1),
-    new THREE.MeshStandardMaterial({ color: 0x4f331f })
-  );
-  bench.position.set(spawnX, 0.15, spawnZ - 6);
-  bench.castShadow = true;
-  scene.add(bench);
-}
-
-// Create cozy village immediately so it exists when teleporting
-createCozyVillage();
-
 
 }
 // ========================================
@@ -689,6 +774,42 @@ function createPortal(x, z) {
 // 🔥 Place portal far away — new secret area!
 const portalGroup = createPortal(5, 5);
 
+// DATABASE 
+  onChildAdded(ref(db, `rooms/${ROOM}/events`), snap=>{
+  const e = snap.val();
+  if(e.type === "spawnCoin") spawnCoin();
+  if(e.type === "coinBoost") coinBoostTimer = e.duration/1000;
+  if(e.type === "message") showAnnouncement(e.text);
+});
+
+  function showAnnouncement(msg){
+    const a = document.getElementById("announcement");
+    a.textContent = msg;
+    a.style.display = "block";
+    setTimeout(()=>a.style.display="none",3000);
+  }
+
+  function updatePressurePlate(id, active) {
+    if (!ROOM) return;
+    set(ref(db, `rooms/${ROOM}/puzzles/plates/${id}`), active);
+  }
+  
+  // Restore village unlocked if teleported before
+  onValue(ref(db, `rooms/${ROOM}/villageUnlocked`), snap => {
+    const unlocked = snap.val();
+    if (unlocked) {
+      cozyGroup.visible = true;
+      console.log("🏡 Village already unlocked!");
+    }
+  });
+
+  onValue(ref(db, `rooms/${ROOM}/build`), snap => {
+  const data = snap.val();
+  if (!data) return;
+
+  buildProgress = data.progress;
+  if (buildProgress >= 100 && !houseBuilt) buildHouse();
+});
 // ========== BOUNCY MUSHROOMS ==========
 const mushrooms = [];
 const flowers = [];
@@ -932,7 +1053,61 @@ for(let i = 0; i < 8; i++) {
 const playerRoot = new THREE.Group();
 playerRoot.position.set(0, 0, 0);
 scene.add(playerRoot);
+// TEAMHOUSE BUILDING
+const nearA = playerRoot.position.distanceTo(markA.position) < 1.2;
+let friendNearB = false;
 
+for (const name in otherPlayers) {
+  const p = otherPlayers[name];
+  if (!p.mesh) continue;
+  if (p.mesh.position.distanceTo(markB.position) < 1.2) friendNearB = true;
+}
+
+if (nearA && friendNearB) {
+  buildProgress += dt * 10; // teamwork = faster
+  showAnnouncement("🏗 Building together!");
+}
+
+if (buildProgress >= 100) {
+  buildProgress = 100;
+  buildHouse();
+ 
+}
+
+function buildHouse() {
+  if (houseBuilt) return;
+  houseBuilt = true;
+  cozyGroup.visible = true;
+
+  showAnnouncement("🏡 Home Built Together! 💕");
+
+  const home = new THREE.Group();
+
+  // House base
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 4, 6),
+    new THREE.MeshStandardMaterial({ color: 0xffe0c8 })
+  );
+  base.position.y = 2;
+  base.castShadow = true;
+  home.add(base);
+
+  // Cute roof
+  const roof = new THREE.Mesh(
+    new THREE.ConeGeometry(4.8, 3.3, 4),
+    new THREE.MeshStandardMaterial({ color: 0xc2544f })
+  );
+  roof.position.y = 5;
+  roof.rotation.y = Math.PI / 4;
+  roof.castShadow = true;
+  home.add(roof);
+
+  home.position.set(80, 0, -55);
+  cozyGroup.add(home);
+}
+
+createCozyVillage();
+cozyGroup.visible = false;
 // Player collision capsule
 const PLAYER_RADIUS = 0.5;
 const PLAYER_HEIGHT = 1.7;
@@ -1608,6 +1783,68 @@ for (const name in otherPlayers) {
     if(vel.length() > targetSpeed) vel.setLength(targetSpeed);
   }
   vel.multiplyScalar(DRAG);
+  if (cozyGroup.visible) {
+  // BUILD Saving — correct location (inside loop)
+if (ROOM && buildProgress > 0 && buildProgress < 100) {
+  update(ref(db, `rooms/${ROOM}/build`), { progress: buildProgress });
+}
+
+// TEAMWORK INTERACTIONS
+const distLeverA = playerRoot.position.distanceTo(leverA.position);
+const distLeverB = playerRoot.position.distanceTo(leverB.position);
+
+// Player can activate lever while standing close
+if (distLeverA < 1.5 && keys.e) {
+  leverState.A = true;
+}
+if (distLeverB < 1.5 && keys.e) {
+  leverState.B = true;
+}
+
+// Sync next area unlock if both activated
+if (leverState.A && leverState.B) {
+  teamworkGate.position.y += 0.1; // gate lifts!
+}
+
+// 🌟 Team healing at campfire
+const distFire = playerRoot.position.distanceTo(fire.position);
+if (distFire < 2) {
+  for (const name in otherPlayers) {
+    const p = otherPlayers[name];
+    if (!p.mesh) continue;
+    if (p.mesh.position.distanceTo(fire.position) < 2) {
+      health = Math.min(100, health + 15 * dt);
+      updateHP();
+    }
+  }
+}
+
+// Team sitting reward at café
+const distTable = playerRoot.position.distanceTo(table.position);
+if (distTable < 1.8) {
+  for (const name in otherPlayers) {
+    const p = otherPlayers[name];
+    if (!p.mesh) continue;
+    if (p.mesh.position.distanceTo(table.position) < 1.8) {
+      coinsCollected += 0.1; // slow farm but ONLY together
+    }
+  }
+}
+
+// Cat adoption if friend nearby
+const distCat = playerRoot.position.distanceTo(catHouse.position);
+if (distCat < 2.5) {
+  let friendHere = false;
+  for (const _ in otherPlayers) friendHere = true;
+
+  if (friendHere && keys.f) {
+    // TODO: spawn a cute pet cat follower!
+    showAnnouncement("🐱 Yay! You adopted a village cat!");
+  }
+}
+}
+
+
 
   // Jump (double/high jump)
   if(keys.space && !jumpRequested) {
@@ -1717,6 +1954,27 @@ for (const name in otherPlayers) {
         model.rotation.z += (0 - model.rotation.z) * 0.12;
       }
     }
+// Portal animation
+if (portalActive && portalGroup) {
+  portal.rotation.z += dt * 1.5;
+  portalGlow.material.opacity = 0.5 + Math.sin(now * 0.005) * 0.3;
+
+  const dist = playerRoot.position.distanceTo(portalGroup.position);
+
+  if (dist < 2.5) {
+    showAnnouncement("🌌 Teleporting...");
+    
+  // Teleported → unlock cozy village for everyone
+  playerRoot.position.set(80, 0, -40);
+    
+  cozyGroup.visible = true;
+  portalActive = false;
+    
+  if (ROOM)
+    set(ref(db, `rooms/${ROOM}/villageUnlocked`), true);
+  
+  }
+}
 
 
 
@@ -1747,21 +2005,6 @@ for (const name in otherPlayers) {
   } else {
     staminaFill.style.background = "linear-gradient(90deg, #fbbf24, #f59e0b)";
   }
-// Portal animation
-if (portalActive && portalGroup) {
-  portal.rotation.z += dt * 1.5;
-  portalGlow.material.opacity = 0.5 + Math.sin(now * 0.005) * 0.3;
-
-  const dist = playerRoot.position.distanceTo(portalGroup.position);
-
-  if (dist < 2.5) {
-    showAnnouncement("🌌 Teleporting...");
-    
-    // Teleport player to secret winter land!
-    playerRoot.position.set(80, 0, -40); // You can change target location
-    portalActive = false;
-  }
-}
 
 // ===== RANK UPDATE =====
 if (ROOM) {
