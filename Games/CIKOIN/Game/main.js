@@ -2,7 +2,10 @@ import * as THREE from "three";
 import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import { getDatabase, ref, set, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+import { 
+  getDatabase, ref, set, get, update, onValue, push, onChildAdded
+} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
+
 
 const firebaseConfig = { 
   apiKey: "AIzaSyAw2Z3KybdR_CJQ1e2_HnHAgKqC1WWxCRk", 
@@ -18,11 +21,109 @@ const firebaseConfig = {
   // Room + Username 
   const ROOM = localStorage.getItem("room_code"); const USER = localStorage.getItem("username") || ("Player" + Math.floor(Math.random()*999));
   let isHost = false;
-  onValue(ref(db, `rooms/${ROOM}/host`), snap => {
-  isHost = (snap.val() === USER);
+  onValue(ref(db, `rooms/${ROOM}/host`), snap=>{
+  isHost = snap.val() === USER;
+  document.getElementById("adminPanel").style.display = isHost?"block":"none";
   console.log("Is Host?", isHost);
-
 });
+
+  onChildAdded(ref(db, `rooms/${ROOM}/events`), snap=>{
+  const e = snap.val();
+  if(e.type === "spawnCoin") spawnCoin();
+  if(e.type === "coinBoost") coinBoostTimer = e.duration/1000;
+  if(e.type === "message") showAnnouncement(e.text);
+});
+
+  function showAnnouncement(msg){
+    const a = document.getElementById("announcement");
+    a.textContent = msg;
+    a.style.display = "block";
+    setTimeout(()=>a.style.display="none",3000);
+  }
+
+  function updatePressurePlate(id, active) {
+    if (!ROOM) return;
+    set(ref(db, `rooms/${ROOM}/puzzles/plates/${id}`), active);
+  }
+
+/* =========================================================
+   TEAMWORK PUZZLE: Pressure Plates
+========================================================= */
+const plates = [];
+
+function createPressurePlate(x, z, id) {
+  const plateGroup = new THREE.Group();
+  plateGroup.position.set(x, 0, z);
+  scene.add(plateGroup);
+
+  // Base plate
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.2, 1.2, 0.25, 24),
+    new THREE.MeshStandardMaterial({ 
+      color: 0x777777, 
+      roughness: 0.8 
+    })
+  );
+  base.position.y = 0.12;
+  base.castShadow = true;
+  base.receiveShadow = true;
+  plateGroup.add(base);
+
+  // Glowing ring
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(1.05, 1.25, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0x22ff22,
+      transparent: true,
+      opacity: 0.8,
+      side: THREE.DoubleSide
+    })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.21;
+  plateGroup.add(ring);
+
+  // Hint UI icon
+  const lbl = document.createElement("div");
+  lbl.textContent = "🟩 STEP";
+  lbl.style.color = "white";
+  lbl.style.fontSize = "16px";
+  lbl.style.fontWeight = "700";
+  lbl.style.textShadow = "0 0 6px #0f0";
+  const plateLabel = new CSS2DObject(lbl);
+  plateLabel.position.set(0, 1.6, 0);
+  plateGroup.add(plateLabel);
+
+  plates.push({
+    id,
+    group: plateGroup,
+    base,
+    ring,
+    label: lbl,
+    pos: new THREE.Vector3(x, 0, z),
+    active: false
+  });
+}
+
+let puzzleSolved = false;
+
+onValue(ref(db, `rooms/${ROOM}/puzzles/plates`), snap => {
+  const state = snap.val() || {};
+  const allPressed = Object.values(state).length === 3 &&
+                     Object.values(state).every(v => v);
+
+  if (allPressed && !puzzleSolved) {
+    puzzleSolved = true;
+    portalActive = true;
+    if (portalGroup) portalGroup.visible = true;
+
+    showAnnouncement("🌀 A magical portal has appeared!");
+
+    if (ROOM) set(ref(db, `rooms/${ROOM}/puzzles/solved`), true);
+  }
+});
+
+
 
 console.log("ROOM:", ROOM);
 console.log("USER:", USER);
@@ -109,22 +210,24 @@ for (const name in players) {
       mesh: createRemotePlayer(),
       x: 0, y: 0, z: 0, rot: 0,
       coins: 0,
-      targetPos: new THREE.Vector3(0,0,0),
+      targetPos: new THREE.Vector3(),
       targetRot: new THREE.Quaternion()
     };
   }
 
-  otherPlayers[name].x = players[name].x;
-  otherPlayers[name].y = players[name].y;
-  otherPlayers[name].z = players[name].z;
-  otherPlayers[name].rot = players[name].rot;
-
-  // ✅ NEW:
-  otherPlayers[name].coins = players[name].coins || 0;
-
-  // ✅ Also update the label’s name
-  otherPlayers[name].playerName = name;
-
+  // Store remote player target states instead of direct applying
+  const p = otherPlayers[name];
+  
+  p.targetPos.set(players[name].x, players[name].y, players[name].z);
+  p.targetRot.setFromEuler(new THREE.Euler(0, players[name].rot, 0));
+  
+  // Coins sync
+  p.coins = players[name].coins || 0;
+  
+  // Sync displayed name label
+  p.playerName = name;
+  
+  
 }
 
 });
@@ -248,6 +351,12 @@ sun.shadow.mapSize.width = 1024;
 sun.shadow.mapSize.height = 1024;
 scene.add(sun);
 
+
+function isWinter() {
+  const month = new Date().getMonth(); 
+  return (month === 10 || month === 0 || month === 1); 
+}
+
 /* CUTE MAP */
 const ground = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
@@ -260,13 +369,103 @@ const ground = new THREE.Mesh(
 ground.rotation.x = -Math.PI/2;
 ground.receiveShadow = true;
 scene.add(ground);
+// Place 3 teamwork puzzle plates
+createPressurePlate(1, 10, "P1");
+createPressurePlate(2, 10, "P2");
 
-// Cute grid pattern
-const grid = new THREE.GridHelper(200, 100, 0xffffff, 0xccffcc);
+  const snowParticles = [];
+
+  function createSnowParticles() {
+    const snowGeo = new THREE.BufferGeometry();
+    const count = 400;
+
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3]     = (Math.random() - 0.5) * 200;
+      positions[i * 3 + 1] = Math.random() * 40 + 10;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
+    }
+
+    snowGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    const snowMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.4,
+      transparent: true,
+      opacity: 0.9
+    });
+
+    const snow = new THREE.Points(snowGeo, snowMat);
+    scene.add(snow);
+    snowParticles.push({ mesh: snow, positions });
+  }
+  
+if (isWinter()) {
+  console.log("❄️ Winter Mode Enabled!");
+
+  const snowMaterial = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.85,
+    metalness: 0.1,
+    emissive: 0xeff7ff,
+    emissiveIntensity: 0.05
+  });
+
+  // Add subtle snow sparkles using normal map noise
+  const loader = new THREE.TextureLoader();
+  loader.load("textures/snow.jpg", tex => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(10, 10);
+    snowMaterial.normalMap = tex;
+    snowMaterial.normalScale.set(0.25, 0.25);
+  });
+
+  ground.material = snowMaterial;
+
+  scene.fog.color.set(0xddeeff);
+  scene.background.set(0xd0e6ff);
+
+  hemi.intensity = 0.5;
+  sun.color.set(0xcceaff);
+
+  // Snow on trees 🌲❄️
+  scene.traverse(obj => {
+    if (obj.isMesh && obj.material) {
+      const col = obj.material.color.getHex();
+      if (col === 0x228b22) obj.material.color.set(0xe0f2ff);
+    }
+  });
+
+  createSnowParticles();
+}
+
+
+// 🌈 Cute Soft Modern Grid
+const isWinterMode = typeof isWinter === "function" && isWinter();
+
+const gridColor = isWinterMode ? 0xeaf6ff : 0xffffff; // Winter = Ice white
+const fadeColor = isWinterMode ? 0xcce9ff : 0xccffcc; // Winter = Sky-pastel
+
+const grid = new THREE.GridHelper(200, 120);
 grid.position.y = 0.02;
-grid.material.opacity = 0.3;
-grid.material.transparent = true;
+
+const mat = grid.material;
+mat.opacity = 0.16;
+mat.transparent = true;
+mat.depthWrite = false; // Avoid dark artifacts
+mat.color.set(gridColor);
+
+// Give different shade to center lines
+grid.material.vertexColors = true;
+grid.material.color.set(gridColor);
+grid.material.groundColor = new THREE.Color(fadeColor);
+
+// Soft emissive glow
+grid.material.emissive = new THREE.Color(gridColor);
+grid.material.emissiveIntensity = 0.02;
+
 scene.add(grid);
+
 
 // Collision objects array
 const collisionObjects = [];
@@ -335,8 +534,160 @@ for(let i = 0; i < 10; i++) {
     minZ: z - 2.2, maxZ: z + 2.2,
     height: 8
   });
+// ========================================
+// SECRET COZY AREA (Portal Destination)
+// ========================================
+
+function createCozyVillage() {
+  // Center teleport spawn point
+  const spawnX = 80;
+  const spawnZ = -40;
+
+  // Cozy ground pad
+  const pad = new THREE.Mesh(
+    new THREE.CircleGeometry(12, 32),
+    new THREE.MeshStandardMaterial({ 
+      color: 0xe8d9b5,
+      roughness: 0.9,
+    })
+  );
+  pad.rotation.x = -Math.PI / 2;
+  pad.position.set(spawnX, 0.01, spawnZ);
+  pad.receiveShadow = true;
+  scene.add(pad);
+
+  // 🔥 Warm lamp posts
+  function createLamp(x, z) {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 3, 8),
+      new THREE.MeshStandardMaterial({ color: 0x4a3a21 })
+    );
+    pole.position.set(x, 1.5, z);
+    pole.castShadow = true;
+    scene.add(pole);
+
+    const light = new THREE.PointLight(0xffddaa, 1.4, 10);
+    light.position.set(x, 3.1, z);
+    light.castShadow = true;
+    scene.add(light);
+  }
+
+  createLamp(spawnX + 3, spawnZ + 3);
+  createLamp(spawnX - 3, spawnZ - 3);
+
+  // 🏠 Cute Houses
+  function createHouse(x, z, color) {
+    const house = new THREE.Group();
+
+    const base = new THREE.Mesh(
+      new THREE.BoxGeometry(5, 3, 5),
+      new THREE.MeshStandardMaterial({ color })
+    );
+    base.position.y = 1.5;
+    house.add(base);
+
+    const roof = new THREE.Mesh(
+      new THREE.ConeGeometry(3.7, 2.5, 4),
+      new THREE.MeshStandardMaterial({
+        color: 0x8b4513,
+        roughness: 0.7,
+        metalness: 0.05
+      })
+    );
+    roof.position.y = 4;
+    roof.rotation.y = Math.PI / 4;
+    house.add(roof);
+
+    house.position.set(x, 0, z);
+    house.traverse(o => o.castShadow = true);
+    scene.add(house);
+  }
+
+  createHouse(spawnX + 8, spawnZ + 6, 0xd4655b);
+  createHouse(spawnX - 8, spawnZ - 6, 0x7dcfb6);
+
+  // 🌳 Trees for coziness
+  for (let i=0; i<6; i++){
+    const x = spawnX + (Math.random()-0.5)*20;
+    const z = spawnZ + (Math.random()-0.5)*20;
+    const trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.4,0.4,3,6),
+      new THREE.MeshStandardMaterial({ color:0x6b3e1d })
+    );
+    trunk.position.set(x,1.5,z);
+    trunk.castShadow = true;
+    scene.add(trunk);
+
+    const leaves = new THREE.Mesh(
+      new THREE.SphereGeometry(2.2,12,12),
+      new THREE.MeshStandardMaterial({ color:0x2d7d46 })
+    );
+    leaves.position.set(x,3.5,z);
+    leaves.castShadow = true;
+    scene.add(leaves);
+  }
+
+  // 🍹 Sitting bench
+  const bench = new THREE.Mesh(
+    new THREE.BoxGeometry(4, 0.3, 1),
+    new THREE.MeshStandardMaterial({ color: 0x4f331f })
+  );
+  bench.position.set(spawnX, 0.15, spawnZ - 6);
+  bench.castShadow = true;
+  scene.add(bench);
+}
+
+// Create cozy village immediately so it exists when teleporting
+createCozyVillage();
+
 
 }
+// ========================================
+// PUZZLE REWARD: MAGIC PORTAL
+// ========================================
+let portal;
+let portalGlow;
+let portalActive = false;
+
+function createPortal(x, z) {
+  const portalGroup = new THREE.Group();
+  portalGroup.position.set(x, 0, z);
+  portalGroup.visible = false; // Hidden until solved
+
+  // Portal ring (glowing halo)
+  const ringGeo = new THREE.RingGeometry(2.4, 2.8, 64);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0x66ccff,
+    transparent: true,
+    opacity: 0.65,
+    side: THREE.DoubleSide
+  });
+  portalGlow = new THREE.Mesh(ringGeo, ringMat);
+  portalGlow.rotation.x = -Math.PI / 2;
+  portalGlow.position.y = 0.05;
+  portalGroup.add(portalGlow);
+
+  // Portal glass (swirl surface)
+  const portalGeo = new THREE.CircleGeometry(2.5, 64);
+  const portalMat = new THREE.MeshBasicMaterial({
+    color: 0x5599ff,
+    opacity: 0.7,
+    transparent: true
+  });
+  portal = new THREE.Mesh(portalGeo, portalMat);
+  portal.rotation.x = -Math.PI / 2;
+  portal.position.y = 0.04;
+  portalGroup.add(portal);
+
+  scene.add(portalGroup);
+
+  // Store for updates
+  portalGroup.isPortal = true;
+  return portalGroup;
+}
+
+// 🔥 Place portal far away — new secret area!
+const portalGroup = createPortal(5, 5);
 
 // ========== BOUNCY MUSHROOMS ==========
 const mushrooms = [];
@@ -934,6 +1285,7 @@ let speedBoostTimer = 0;
 let shieldTimer = 0;
 let magnetTimer = 0;
 let highJumpTimer = 0;
+let coinBoostTimer = 0; // 🔥 NEW: Global coin boost timer
 
 // Magnet parameters
 const MAGNET_RADIUS = 12;
@@ -952,6 +1304,59 @@ update(ref(db, `rooms/${ROOM}/players/${USER}`), {
 });
 
 }
+/* =========================================================
+   ADMIN PANEL
+========================================================= */
+document.getElementById("spawnCoinBtn").onclick = () => {
+  push(ref(db, `rooms/${ROOM}/events`), {
+    type:"spawnCoin",
+    time:Date.now(),
+    creator:USER
+  });
+};
+
+document.getElementById("boostBtn").onclick = () => {
+  push(ref(db, `rooms/${ROOM}/events`), {
+    type:"coinBoost",
+    duration:20000,
+    creator:USER
+  });
+};
+
+document.getElementById("msgBtn").onclick = () => {
+  const text = prompt("Message:");
+  if (!text) return;
+  push(ref(db, `rooms/${ROOM}/events`), {
+    type:"message",
+    text,
+    creator:USER
+  });
+};
+  
+// ===== ADMIN SECRET ACCESS =====
+window.unlockAdmin = function(password) {
+  const SECRET = "3549151"; // change anytime
+
+  if (password !== SECRET) {
+    console.warn("❌ Wrong admin password");
+    return;
+  }
+
+  if (!ROOM || !USER) {
+    console.warn("⚠ No active room or user.");
+    return;
+  }
+
+  console.log("✔ Admin unlocked!");
+  isHost = true;
+
+  // Update Firebase to make this player the host
+  set(ref(db, `rooms/${ROOM}/host`), USER);
+
+  // Show admin panel if exists
+  const panel = document.getElementById("adminPanel");
+  if (panel) panel.style.display = "block";
+};
 
 /* =========================================================
    LOOP
@@ -1010,23 +1415,24 @@ for (const name in otherPlayers) {
   const p = otherPlayers[name];
   if (!p.mesh) continue;
 
-  // Smooth movement
-  p.mesh.position.lerp(new THREE.Vector3(p.x, p.y, p.z), 0.12);
+  // Smooth position + rotation based on target vectors
+  p.mesh.position.lerp(p.targetPos, 0.15);
+  p.mesh.quaternion.slerp(p.targetRot, 0.15);
+  
+  // Adjust facing direction including FBX mouth direction
+  p.mesh.rotation.y = p.mesh.rotation.y; // keep yaw override
 
-  // Smooth rotation on group, not model
-  const current = p.mesh.rotation.y;
-  const target = p.rot + MODEL_FACE_ADJUST; // ✅ keeps facing correct
-  p.mesh.rotation.y += (target - current) * 0.18;
 }
 
 
 
 
   // Send to Firebase only every 100ms (10/s instead of 60)
-  if (now - lastSend > 33) { // ~30 updates/sec
+  if (now - lastSend > 100) { // 10/s = enough
     sendPlayerData();
     lastSend = now;
   }
+
 
   // Animate clouds
   clouds.forEach(cloud => {
@@ -1058,7 +1464,7 @@ for (const name in otherPlayers) {
       scene.remove(coin.mesh);
     
       // ✅ Increase local coin count
-      coinsCollected++;
+      coinsCollected += (coinBoostTimer > 0 ? 2 : 1); // 2x coins if boosted
     
       // ✅ Write to database
       if (ROOM) {
@@ -1081,7 +1487,8 @@ for (const name in otherPlayers) {
     }
 
   });
-  
+  coinBoostTimer = Math.max(0, coinBoostTimer - dt);
+
     // Collect flowers
     flowers.forEach(f => {
       if (f.collected) return;
@@ -1279,6 +1686,20 @@ for (const name in otherPlayers) {
     playerRoot.rotation.y = current + wrapped * 0.15; // 0.1 = slow turn, 0.3 = fast turn
   }
 
+  // === PRESSURE PLATE ACTIVATION ===
+  plates.forEach(p => {
+    const stepping = playerRoot.position.distanceTo(p.pos) < 1.3;
+  
+    if (stepping !== p.active) {
+      p.active = stepping;
+      updatePressurePlate(p.id, p.active);
+    }
+  
+    // Visual feedback
+    p.base.material.color.set(p.active ? 0x00ff00 : 0x777777);
+    p.ring.material.opacity = p.active ? 1.0 : 0.3;
+  });
+
 
   
     // ✅ Walk cycle animation
@@ -1326,6 +1747,21 @@ for (const name in otherPlayers) {
   } else {
     staminaFill.style.background = "linear-gradient(90deg, #fbbf24, #f59e0b)";
   }
+// Portal animation
+if (portalActive && portalGroup) {
+  portal.rotation.z += dt * 1.5;
+  portalGlow.material.opacity = 0.5 + Math.sin(now * 0.005) * 0.3;
+
+  const dist = playerRoot.position.distanceTo(portalGroup.position);
+
+  if (dist < 2.5) {
+    showAnnouncement("🌌 Teleporting...");
+    
+    // Teleport player to secret winter land!
+    playerRoot.position.set(80, 0, -40); // You can change target location
+    portalActive = false;
+  }
+}
 
 // ===== RANK UPDATE =====
 if (ROOM) {
@@ -1393,12 +1829,11 @@ document.getElementById("teamScore").textContent = `TEAM SCORE: ${teamScore}`;
   if (highJumpTimer>0) tags.push(`🦘`);
   const tagStr = tags.join(" ");
   //debug.textContent = `🪙 ${coinsCollected}   ${p1} ${tagStr}`;
+    renderer.render(scene, camera);
+    labelRenderer.render(scene, camera); // <-- THIS MAKES HP VISIBLE
 
-  renderer.render(scene, camera);
-  labelRenderer.render(scene, camera); // <-- THIS MAKES HP VISIBLE
-
-  requestAnimationFrame(loop);
-}
+    requestAnimationFrame(loop);
+  }
 loop();
 
 
