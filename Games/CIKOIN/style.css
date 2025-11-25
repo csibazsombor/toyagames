@@ -34,6 +34,27 @@ h1 {
 @keyframes blink {
   50% { opacity: 0.4; }
 }
+.continue{
+  display: none;
+  background-color: #b0e7d77a;
+  border-radius: 15px;
+  margin: 150px;
+  padding-bottom: 0.5cm;
+  padding-top: 0.2cm;
+}
+
+.delete-save{
+  background: #f56b6b;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 4px 0px #c56060;
+}
+
+.delete-save:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 5px 0px #a55b5b;
+}
 
 /* Inputs & Selects */
 select, input {
@@ -167,4 +188,11 @@ button:active {
     font-size: 1rem;
   }
   body { padding-top: 3cm; }
+  .continue{
+  background-color: #b0e7d77a;
+  border-radius: 15px;
+  margin: 15px;
+  padding-bottom: 0.2cm;
+  padding-top: 0.05cm;
+}
 }

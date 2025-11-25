@@ -10,10 +10,11 @@ let load_div = document.getElementById("loading");
 let character_div = document.getElementById("characters");
 let server_div = document.getElementById("server");
 let room_div = document.getElementById("room");
+let continue_div = document.getElementById("continue");
 
 let your_name = null;
 let your_character = null;
-
+let delete_save = false;
 document.addEventListener("DOMContentLoaded", () => {
 
     // Read URL param: ?room=xxxx
@@ -37,10 +38,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-// Delete all data before to make everything clear
-localStorage.removeItem("username");
-localStorage.removeItem("room_code");
+let alreadyWarned = false; // Prevent repeated warning
 
+function checkSavedData() {
+    const username = localStorage.getItem("username");
+    const room = localStorage.getItem("room_code");
+
+    if (username || room) {
+        if (delete_save) {
+            localStorage.removeItem("username");
+            localStorage.removeItem("room_code");
+            continue_div.style.display = "none";
+            alreadyWarned = false; // reset warning if save is deleted
+        } else {
+            if (!alreadyWarned) {
+                console.warn("Saved datas detected");
+                alreadyWarned = true;
+            }
+            continue_div.style.display = "block";
+        }
+    } else {
+        continue_div.style.display = "none";
+        alreadyWarned = false; // reset when nothing is saved
+    }
+}
+
+checkSavedData();
+setInterval(checkSavedData, 300);
+
+
+
+function Continue() {
+    if(localStorage.getItem("room_code")) {
+        window.location.href = "./Game/index.html"; 
+    } else{
+        return;
+    }
+}
 function Update_player() {
        navigator.vibrate(30);
        beep();
