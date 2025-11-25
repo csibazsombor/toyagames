@@ -320,5 +320,13 @@ canvas {
 </script>
 
 <script type="module" src="./main.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js')
+    .then(() => console.log('🔥 Local caching active'))
+    .catch(err => console.warn('SW registration failed:', err));
+}
+</script>
+sw
 </body>
 </html>

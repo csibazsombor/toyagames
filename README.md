@@ -1,2 +1,2 @@
-# toyagames | v1.1
+# toyagames | v1.2
 Games from toya

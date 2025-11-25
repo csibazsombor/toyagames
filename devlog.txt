@@ -1,3 +1,4 @@
 - tasks, teamwork
 - Shop
 After round 3, the shop will appear and you can buy potions, more skills.
+- New menu features
