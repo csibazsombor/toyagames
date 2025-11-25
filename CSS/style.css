@@ -25,7 +25,10 @@
       overflow-x: hidden;
       position: relative;
     }
-
+    img{
+      border-radius: 15px;
+      box-shadow: 0 4px 0px #c5d4f7;
+    }
     /* Title */
     h2 {
       font-size: 1.1cm;
