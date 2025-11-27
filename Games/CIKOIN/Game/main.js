@@ -23,7 +23,6 @@ const firebaseConfig = {
   let isHost = false;
   onValue(ref(db, `rooms/${ROOM}/host`), snap=>{
   isHost = snap.val() === USER;
-  document.getElementById("adminPanel").style.display = isHost?"block":"none";
   console.log("Is Host?", isHost);
 });
 
@@ -298,6 +297,10 @@ loadingManager.onLoad = () => {
     if (displayedProgress > 99.5) {
       clearInterval(fade);
       loadingScreen.style.opacity = "0";
+        if(localStorage.getItem("username") == null)
+        {
+          alert("Offline mode");
+        }
       setTimeout(() => loadingScreen.remove(), 650);
     }
   }, 33);
@@ -436,6 +439,7 @@ if (isWinter()) {
 
   createSnowParticles();
 }
+
 // ========================================
 // SECRET COZY VILLAGE AREA (Hidden until unlocked)
 // ========================================
@@ -780,6 +784,11 @@ const portalGroup = createPortal(5, 5);
   if(e.type === "spawnCoin") spawnCoin();
   if(e.type === "coinBoost") coinBoostTimer = e.duration/1000;
   if(e.type === "message") showAnnouncement(e.text);
+  if(e.type === "teleportVillage") {
+  playerRoot.position.set(80, 0, -40);
+  cozyGroup.visible = true;
+}
+
 });
 
   function showAnnouncement(msg){
@@ -1506,6 +1515,43 @@ document.getElementById("msgBtn").onclick = () => {
     text,
     creator:USER
   });
+  document.getElementById("removeCoinsBtn").onclick = () => {
+  set(ref(db, `rooms/${ROOM}/players`), {});
+  showAnnouncement("🧹 Coins wiped!");
+};
+
+document.getElementById("resetFlowersBtn").onclick = () => {
+  set(ref(db, `rooms/${ROOM}/flowers`), null);
+  showAnnouncement("🌼 Flowers reset!");
+};
+
+document.getElementById("resetChestsBtn").onclick = () => {
+  set(ref(db, `rooms/${ROOM}/chests`), null);
+  showAnnouncement("📦 Chests reset!");
+};
+
+document.getElementById("forcePortalBtn").onclick = () => {
+  set(ref(db, `rooms/${ROOM}/puzzles/solved`), true);
+  showAnnouncement("🌀 Portal forced!");
+};
+
+document.getElementById("unlockVillageBtn").onclick = () => {
+  set(ref(db, `rooms/${ROOM}/villageUnlocked`), true);
+  showAnnouncement("🏡 Village unlocked!");
+};
+
+document.getElementById("tpVillageBtn").onclick = () => {
+  push(ref(db, `rooms/${ROOM}/events`), {
+    type:"teleportVillage",
+    time:Date.now()
+  });
+};
+
+document.getElementById("clearEventsBtn").onclick = () => {
+  set(ref(db, `rooms/${ROOM}/events`), null);
+  showAnnouncement("🧹 Events cleared!");
+};
+
 };
   
 // ===== ADMIN SECRET ACCESS =====
@@ -1532,6 +1578,22 @@ window.unlockAdmin = function(password) {
   const panel = document.getElementById("adminPanel");
   if (panel) panel.style.display = "block";
 };
+// Hide by default
+const adminPanel = document.getElementById("adminPanel");
+adminPanel.style.display = "none";
+
+function toggleAdminPanel() {
+  if (!isHost) return;
+  adminPanel.style.display = 
+    adminPanel.style.display === "none" ? "block" : "none";
+
+}
+addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    toggleAdminPanel();
+  }
+});
+
 
 /* =========================================================
    LOOP

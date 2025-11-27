@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CIKOIN</title>
 <link rel="shortcut icon" href="../../../favicon/favicon.ico" type="image/x-icon">
+
 <style>
 /* ====== Global reset ====== */
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -101,6 +102,7 @@ canvas {
     font-size: 17px;
     padding: 6px 14px;
   }
+
 }
 
 
@@ -211,10 +213,12 @@ canvas {
   transform:translate(-50%,-50%);
 }
 
-    img{
-      border-radius: 15px;
-      box-shadow: 0 10px 0px #c5d4f7;
-    }
+img{
+  height: 200px;
+  border-radius: 15px;
+  box-shadow: 0 10px 0px #c5d4f7;
+}
+
 /* ====== Mobile Jump Button ====== */
 #jumpBtn {
   display:none;
@@ -257,9 +261,15 @@ canvas {
   }
   #gamepad { width:150px; height:150px; }
   #stick { width:60px; height:60px; }
+  img {
+  height: 140px;
+  border-radius: 15px;
+  box-shadow: 0 10px 0px #c5d4f7;
+}
 }
 
 </style>
+
 </head>
 
 <body>
@@ -278,10 +288,18 @@ canvas {
 <div id="adminPanel" style="
   position:absolute; top:20px; right:20px;
   background:#ffffffaa; padding:12px;
-  border-radius:12px; display:none; z-index:2000;">
+  border-radius:15px; display:none; z-index:2000;">
   <button id="spawnCoinBtn">Spawn Coin</button>
   <button id="boostBtn">Double Coins (20s)</button>
   <button id="msgBtn">Send Message</button>
+  <button id="removeCoinsBtn">Remove All Coins</button>
+  <button id="resetFlowersBtn">Reset Flowers</button>
+  <button id="resetChestsBtn">Reset Chests</button>
+  <button id="forcePortalBtn">Force Portal</button>
+  <button id="unlockVillageBtn">Unlock Village</button>
+  <button id="tpVillageBtn">TP All to Village</button>
+  <button id="clearEventsBtn">Clear Events</button>
+
 </div>
 <div id="announcement" style="
   position:absolute; top:50%; left:50%;
