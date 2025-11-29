@@ -196,37 +196,32 @@ function createRemotePlayer() {
 
 // Listen to database updates for other players
 if (ROOM) {
-  onValue(ref(db, `rooms/${ROOM}/players`), snap => {
-    const players = snap.val() || {};
-
-for (const name in players) {
-  if (name === USER) continue;
+// Add players only when they appear
+onChildAdded(ref(db, `rooms/${ROOM}/players`), snap => {
+  const name = snap.key;
+  if (name === USER) return;
 
   if (!otherPlayers[name]) {
     otherPlayers[name] = {
       mesh: createRemotePlayer(),
-      x: 0, y: 0, z: 0, rot: 0,
-      coins: 0,
       targetPos: new THREE.Vector3(),
-      targetRot: new THREE.Quaternion()
+      targetRot: new THREE.Quaternion(),
+      coins: 0
     };
   }
+});
 
-  // Store remote player target states instead of direct applying
+// Update only changed data
+onChildChanged(ref(db, `rooms/${ROOM}/players`), snap => {
+  const name = snap.key;
+  if (name === USER) return;
   const p = otherPlayers[name];
-  
-  p.targetPos.set(players[name].x, players[name].y, players[name].z);
-  p.targetRot.setFromEuler(new THREE.Euler(0, players[name].rot, 0));
-  
-  // Coins sync
-  p.coins = players[name].coins || 0;
-  
-  // Sync displayed name label
-  p.playerName = name;
-  
-  
-}
+  const data = snap.val();
+  if (!p) return;
 
+  p.targetPos.set(data.x, data.y, data.z);
+  p.targetRot.setFromEuler(new THREE.Euler(0, data.rot, 0));
+  p.coins = data.coins || 0;
 });
   
 if (ROOM) {
@@ -1066,11 +1061,30 @@ scene.add(playerRoot);
 const nearA = playerRoot.position.distanceTo(markA.position) < 1.2;
 let friendNearB = false;
 
+const MAX_NET_DISTANCE = 40;
+
 for (const name in otherPlayers) {
   const p = otherPlayers[name];
   if (!p.mesh) continue;
-  if (p.mesh.position.distanceTo(markB.position) < 1.2) friendNearB = true;
+
+  // Distance-based optimization
+  const dist = p.mesh.position.distanceTo(playerRoot.position);
+  if (dist > MAX_NET_DISTANCE) {
+    // Hide or disable expensive features when far away
+    p.mesh.visible = false;
+    continue;
+  } else {
+    p.mesh.visible = true;
+  }
+
+  // Smooth movement (interpolation)
+  p.mesh.position.lerp(p.targetPos, 0.12);
+  p.mesh.quaternion.slerp(p.targetRot, 0.12);
+
+  // Smooth Y bobbing + animation
+  // (if you kept your existing movement animation)
 }
+
 
 if (nearA && friendNearB) {
   buildProgress += dt * 10; // teamwork = faster
@@ -1213,6 +1227,15 @@ loader.load(
 
     model = fbx;
     playerRoot.add(model);
+    // Disable unnecessary bones or advanced details
+    fbx.traverse(o => {
+      if (o.isMesh) {
+        o.geometry.computeBoundsTree = undefined; // disable heavy BVH
+        o.frustumCulled = true; // auto cull if off-screen
+        o.castShadow = false; // huge perf boost
+      }
+    });
+
         // ✅ Store for cloning remote players
     window.originalPlayerModel = fbx;
   },
@@ -1434,8 +1457,9 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🚀 Faster player
-const WALK_BASE = 60;
-const RUN_BASE  = 165;
+const WALK_BASE = isMobile ? 30 : 60;
+const RUN_BASE  = isMobile ? 90 : 165;
+
 
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
@@ -1477,17 +1501,30 @@ const MAGNET_PULL   = 12; // units/s toward player
 
 
 // Send my position to database
-let lastSend = 0;
+let lastSentPos = new THREE.Vector3();
+let lastSentRot = 0;
+
 function sendPlayerData() {
   if (!ROOM || !USER) return;
-update(ref(db, `rooms/${ROOM}/players/${USER}`), {
-  x: playerRoot.position.x,
-  y: playerRoot.position.y,
-  z: playerRoot.position.z,
-  rot: playerRoot.rotation.y - MODEL_FACE_ADJUST
-});
 
+  const dx = Math.abs(playerRoot.position.x - lastSentPos.x);
+  const dz = Math.abs(playerRoot.position.z - lastSentPos.z);
+  const drot = Math.abs(playerRoot.rotation.y - lastSentRot);
+
+  // Only update if moved enough
+  if (dx < 0.03 && dz < 0.03 && drot < 0.02) return;
+
+  update(ref(db, `rooms/${ROOM}/players/${USER}`), {
+    x: playerRoot.position.x,
+    y: playerRoot.position.y,
+    z: playerRoot.position.z,
+    rot: playerRoot.rotation.y
+  });
+
+  lastSentPos.copy(playerRoot.position);
+  lastSentRot = playerRoot.rotation.y;
 }
+
 /* =========================================================
    ADMIN PANEL
 ========================================================= */
@@ -1599,6 +1636,8 @@ addEventListener("keydown", e => {
    LOOP
 ========================================================= */
 let last = performance.now();
+// Network rate limiter — last time we sent data to DB
+let lastSend = 0;
 
 function loop() {
 
@@ -1653,8 +1692,9 @@ for (const name in otherPlayers) {
   if (!p.mesh) continue;
 
   // Smooth position + rotation based on target vectors
-  p.mesh.position.lerp(p.targetPos, 0.15);
-  p.mesh.quaternion.slerp(p.targetRot, 0.15);
+  p.mesh.position.lerp(p.targetPos, 0.12);
+  p.mesh.quaternion.slerp(p.targetRot, 0.12);
+
   
   // Adjust facing direction including FBX mouth direction
   p.mesh.rotation.y = p.mesh.rotation.y; // keep yaw override
@@ -1665,10 +1705,13 @@ for (const name in otherPlayers) {
 
 
   // Send to Firebase only every 100ms (10/s instead of 60)
-  if (now - lastSend > 100) { // 10/s = enough
+  let updateInterval = (vel.length() > 0.1 ? 90 : 250); // 250ms idle
+
+  if (now - lastSend > updateInterval) {
     sendPlayerData();
     lastSend = now;
   }
+
 
 
   // Animate clouds
@@ -1964,12 +2007,15 @@ if (distCat < 2.5) {
     }
 
   // Ground check
-  if(playerRoot.position.y <= 0) {
-    playerRoot.position.y = 0;
-    verticalVel = 0;
-    isGrounded = true;
-    hasDoubleJumped = false;
+  if (playerRoot.position.y <= 0.01) {
+    if (verticalVel < 0) verticalVel = 0;
+    playerRoot.position.y = 0.01;
+    if (!isGrounded) {
+      isGrounded = true;
+      hasDoubleJumped = false;
+    }
   }
+
 
   // Face movement
   if (moving) {
@@ -2070,27 +2116,35 @@ if (portalActive && portalGroup) {
 
 // ===== RANK UPDATE =====
 if (ROOM) {
-  const scoreList = [];
+    const scoreList = [];
 
-  scoreList.push({ name: USER, coins: coinsCollected, mesh: playerRoot });
+    // Add MYSELF once only
+    scoreList.push({
+      name: USER,
+      coins: coinsCollected,
+      mesh: playerRoot
+    });
 
-  for (const name in otherPlayers) {
-    const p = otherPlayers[name];
-    if (!p.mesh) continue;
-    scoreList.push({ name, coins: p.coins || 0, mesh: p.mesh });
-  }
+    // Add others
+    Object.keys(otherPlayers).forEach(name => {
+      const p = otherPlayers[name];
+      if (!p.mesh) return;
+      scoreList.push({
+        name,
+        coins: p.coins || 0,
+        mesh: p.mesh
+      });
+    });
 
-  scoreList.sort((a, b) => b.coins - a.coins);
+    // Sort correct order
+    scoreList.sort((a, b) => b.coins - a.coins);
 
-  scoreList.forEach((entry, index) => {
-    const rank = index + 1;
-    if (entry.mesh && entry.mesh.rankLabel) {
-      entry.mesh.rankLabel.style.color = "#ffe8fa";
-      entry.mesh.rankLabel.style.textShadow = "0 0 8px #ffb8b8ff";
-      entry.mesh.rankLabel.innerHTML = `#${rank} ${entry.name}`;
+    // Apply rank numbers to correct player mesh
+    scoreList.forEach((entry, index) => {
+      if (!entry.mesh.rankLabel) return;
+      entry.mesh.rankLabel.innerHTML = `#${index+1} ${entry.name}`;
+    });
 
-    }
-  });
   
 }
 

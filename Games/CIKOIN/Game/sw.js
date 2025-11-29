@@ -1,15 +1,15 @@
 const CACHE_VERSION = 'cikoin-v2';
 const ASSETS = [
-  '/', 
-  '/index.html',
+  './', 
+  './index.html',
 
   // JS files
-  '/main.js',
-  '/three.module.js',
+  './main.js',
+  './three.module.js',
 
   // Models / textures
-  '/assets/character.fbx',
-  '/textures/snow.jpg',
+  './assets/character.fbx',
+  './textures/snow.jpg',
 ];
 
 // Install → store files locally
