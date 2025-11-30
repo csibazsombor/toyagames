@@ -25,6 +25,30 @@ const firebaseConfig = {
   isHost = snap.val() === USER;
   console.log("Is Host?", isHost);
 });
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./sw.js").then(reg => {
+    console.log("🛡 SW registered");
+
+    reg.addEventListener("updatefound", () => {
+      const newSW = reg.installing;
+
+      newSW.addEventListener("statechange", () => {
+        if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+          console.log("📢 New update ready!");
+
+          // Show popup
+          document.getElementById("update-popup").style.display = "block";
+
+          // When user clicks update → reload fully
+          document.getElementById("update-btn").onclick = () => {
+            newSW.postMessage("skipWaiting");
+            window.location.reload(true);
+          };
+        }
+      });
+    });
+  });
+}
 
 /* =========================================================
    TEAMWORK PUZZLE: Pressure Plates
@@ -1378,9 +1402,7 @@ if(isMobile) {
   }, {passive:false});
 }
 
-const potionBtn = document.getElementById("potionBtn");
-potionBtn.style.display = "block";
-potionBtn.onclick = usePotion;
+
 
 /* =========================================================
    CAMERA

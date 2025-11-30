@@ -1,4 +1,7 @@
-const CACHE_VERSION = "cikoin-v4";
+// ======================
+// Service Worker Config
+// ======================
+const CACHE_VERSION = "cikoin-v7"; // bump this when you update the game
 const CACHE_NAME = `cache-${CACHE_VERSION}`;
 
 const ASSETS = [
@@ -10,65 +13,77 @@ const ASSETS = [
   "./textures/snow.jpg",
 ];
 
-// Install → Pre-cache core assets
-self.addEventListener("install", e => {
-  self.skipWaiting(); // Force new SW to activate immediately
+// ======================
+// INSTALL — Cache assets
+// ======================
+self.addEventListener("install", event => {
+  console.log("📥 Installing Service Worker…");
+  self.skipWaiting(); // Allow immediate activation
 
-  e.waitUntil(
+  event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log("📥 Pre-caching game assets…");
       return cache.addAll(ASSETS).catch(err => {
-        console.warn("⚠️ Some assets failed to cache:", err);
+        console.warn("⚠️ Asset caching issue:", err);
       });
     })
   );
 });
 
-// Fetch → Stale-while-revalidate strategy
-self.addEventListener("fetch", e => {
-  const request = e.request;
+// ======================
+// FETCH — Stale-while-revalidate
+// ======================
+self.addEventListener("fetch", event => {
+  const request = event.request;
 
-  // Only cache GET requests (safety)
+  // Only cache GET requests (avoid Firebase errors)
   if (request.method !== "GET") return;
 
-  e.respondWith(
+  event.respondWith(
     caches.match(request).then(cached => {
-      const fetchAndUpdate = fetch(request)
+      const networkFetch = fetch(request)
         .then(networkResp => {
+          // Don’t cache failed responses
           if (!networkResp || networkResp.status !== 200) {
             return networkResp;
           }
 
+          // Clone response BEFORE streaming it
+          const cloneResp = networkResp.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(request, networkResp.clone());
+            cache.put(request, cloneResp);
           });
 
           return networkResp;
         })
-        .catch(() => cached); // fallback to cache if offline
+        .catch(() => cached); // If offline → use cache
 
-      // Prefer cache first, update silently for next time
-      return cached || fetchAndUpdate;
+      return cached || networkFetch;
     })
   );
 });
 
-// Activation → Remove old cache versions
-self.addEventListener("activate", e => {
-  e.waitUntil(
+// ======================
+// ACTIVATE — Remove old caches
+// ======================
+self.addEventListener("activate", event => {
+  console.log("♻ Cleaning old caches…");
+  event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys
           .filter(key => key !== CACHE_NAME)
           .map(key => caches.delete(key))
       )
-    ).then(() => self.clients.claim()) // instantly control existing pages
+    ).then(() => self.clients.claim())
   );
 });
 
-// Optional: notify pages when update available
+// ======================
+// SUPPORT UPDATE POPUP
+// ======================
 self.addEventListener("message", event => {
-  if (event.data === "checkForUpdate") {
+  if (event.data === "skipWaiting") {
+    console.log("⏭ Skip waiting: Activating update");
     self.skipWaiting();
   }
 });

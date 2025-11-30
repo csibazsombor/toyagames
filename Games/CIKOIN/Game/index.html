@@ -274,6 +274,32 @@ img{
 </head>
 
 <body>
+  <div id="update-popup" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #111d;
+  color: #fff;
+  padding: 14px 18px;
+  border-radius: 8px;
+  font-family: sans-serif;
+  display: none;
+  backdrop-filter: blur(4px);
+  border: 1px solid #3ff;
+  z-index: 9999;
+">
+  🔄 New update available!
+  <button id="update-btn" style="
+    margin-left: 10px;
+    background: #0af;
+    border: none;
+    padding: 6px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+    cursor: pointer;
+  ">Update</button>
+</div>
+
 <div id="loading-screen">
   <div class="loader-cat">
     <img src="../../../Screenshots/Screenshot_2.png" alt="loading cat">
@@ -310,7 +336,6 @@ img{
 
 
     <div id="teamScore"></div>
-    <button id="potionBtn">🍎</button>
     <div id="inventory"></div>
 
  
@@ -343,13 +368,5 @@ img{
 </script>
 
 <script type="module" src="./main.js"></script>
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(() => console.log('🔥 Local caching active'))
-    .catch(err => console.warn('SW registration failed:', err));
-}
-</script>
-sw
 </body>
 </html>
