@@ -295,19 +295,80 @@ function smoothProgress(real) {
   loaderPercent.textContent = Math.round(displayedProgress) + "%";
 }
 
+// =========================
+// Detailed Loading Manager
+// =========================
+let loadStages = [
+  { keyword: ".fbx",     name: "🐾 Loading Character Model" },
+  { keyword: ".jpg",     name: "🖼️ Loading Textures" },
+  { keyword: ".png",     name: "🖼️ Loading Images" },
+  { keyword: ".glb",     name: "📦 Loading 3D Assets" },
+  { keyword: "firebase", name: "⛓️ Connecting Multiplayer" },
+  { keyword: "levels",   name: "🌍 Generating World" },
+];
+
+let currentStage = "⏳ Starting...";
+let loadedFiles = 0;
+let totalFiles = 0;
+
 const loadingManager = new THREE.LoadingManager();
 
-// When something loads
-loadingManager.onProgress = (url, loaded, total) => {
-  let name = url.split('/').pop();
-
-  if (name.endsWith(".fbx")) name = "Character Model";
-  else if (name.match(/\.(png|jpg|jpeg)$/i)) name = "Textures";
-  else if (name.length > 20) name = "Resources";
-
-  loaderText.textContent = "Loading " + name + "...";
-  smoothProgress((loaded / total) * 100);
+// First detect how many assets in total
+loadingManager.onStart = (url, itemsLoaded, itemsTotal) => {
+  totalFiles = itemsTotal;
 };
+
+loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+  loadedFiles = itemsLoaded;
+  totalFiles = itemsTotal;
+
+  // Pick stage name by matching file extension/keyword
+  let stage = loadStages.find(s => url.includes(s.keyword));
+  currentStage = stage ? stage.name : "📦 Loading Resources";
+
+  loaderText.textContent =
+    `${currentStage} (${loadedFiles}/${totalFiles})`;
+
+  let progress = (loadedFiles / totalFiles) * 100;
+  smoothProgress(progress);
+
+  loaderPercent.textContent = Math.round(displayedProgress) + "%";
+};
+
+// When EVERYTHING finished
+loadingManager.onLoad = () => {
+  loaderText.textContent = "🚀 Starting Adventure...";
+  smoothProgress(100);
+
+  // FUN FINAL HINT MESSAGES while fading
+  setTimeout(() => {
+    loaderText.textContent = "🌐 Syncing Multiplayer...";
+  }, 400);
+
+  setTimeout(() => {
+    loaderText.textContent = "🎮 Ready!";
+  }, 800);
+
+  // Remove screen
+  setTimeout(() => {
+    loadingScreen.style.opacity = "0";
+    setTimeout(() => loadingScreen.remove(), 600);
+  }, 1000);
+};
+
+const tips = [
+  "💡 Tip: Stand on plates together to unlock magic!",
+  "🔍 Explore the map — secrets are hiding!",
+  "😺 Befriend cats in the Cozy Village!",
+  "⚡ Collect powerups for special boosts!",
+  "🎉 Play with friends for more rewards!"
+];
+
+setInterval(() => {
+  const random = tips[Math.floor(Math.random()*tips.length)];
+  loaderText.textContent = random;
+}, 4000);
+
 
 // When loading is fully finished
 loadingManager.onLoad = () => {
