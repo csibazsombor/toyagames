@@ -1,113 +1,87 @@
 // ======================
 // Service Worker Config
 // ======================
-const CACHE_VERSION = "cikoin-v1.3"; // bump when assets change
+const CACHE_VERSION = "cikoin-v2.5"; // bump when assets change
 const CACHE_NAME = `cache-${CACHE_VERSION}`;
 
-const ASSETS = [
+// Precache only the most important core files
+// Everything else will be auto-cached whenever requested
+const CORE_ASSETS = [
   "./",
   "./index.html",
   "./main.js",
-  "./three.module.js",
-  "./assets/character.fbx",
-  "./textures/snow.jpg",
+  "./sw.js"
 ];
 
-// Helper — re-download and replace broken cache entries
-async function repairCache(request) {
-  try {
-    const networkResp = await fetch(request, { cache: "no-store" });
-    if (networkResp && networkResp.ok) {
-      const clone = networkResp.clone();
-      const cache = await caches.open(CACHE_NAME);
-      await cache.put(request, clone);
-      console.log("🛠 Repaired:", request.url);
-      return networkResp;
-    }
-  } catch (err) {
-    console.warn("❌ Repair failed:", request.url, err);
-  }
-  return null;
-}
 
 // ======================
-// INSTALL — Pre-cache necessary files
+// INSTALL — Pre-cache core
 // ======================
 self.addEventListener("install", event => {
-  console.log("📥 Installing Service Worker…");
+  console.log("📥 Installing Service Worker...");
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-      for (const item of ASSETS) {
-        try {
-          await cache.add(item);
-        } catch {
-          console.warn("⚠️ Failed caching:", item, "→ retrying…");
-          await repairCache(item);
-        }
-      }
+    caches.open(CACHE_NAME).then(cache => {
+      console.log("📦 Caching core files...");
+      return cache.addAll(CORE_ASSETS);
     })
+  );
+
+  self.skipWaiting(); // instantly activate new version
+});
+
+
+// ======================
+// FETCH — Cache-first for everything from YOUR DOMAIN
+// Avoid caching external resources like Firebase (online only)
+// ======================
+self.addEventListener("fetch", event => {
+  const req = event.request;
+
+  // Only cache local assets from this origin
+  if (!req.url.startsWith(self.location.origin)) {
+    return; // Firebase + CDN = always online
+  }
+
+  event.respondWith(
+    caches.match(req).then(cacheResp =>
+      cacheResp ||
+      fetch(req, { cache: "no-store" }).then(networkResp => {
+        // Only cache successful responses
+        if (networkResp && networkResp.ok) {
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(req, networkResp.clone());
+          });
+        }
+        return networkResp;
+      }).catch(() => cacheResp) // fallback offline
+    )
   );
 });
 
-// ======================
-// FETCH — Cache-first + auto repair
-// ======================
-self.addEventListener("fetch", event => {
-  const request = event.request;
-  if (request.method !== "GET") return;
-
-  event.respondWith((async () => {
-    const cached = await caches.match(request);
-
-    if (cached) {
-      const size = cached.headers.get("Content-Length");
-      if (!size || size === "0") {
-        console.warn("🧹 Corrupt cache → repairing:", request.url);
-        const fresh = await repairCache(request);
-        return fresh || cached;
-      }
-      return cached;
-    }
-
-    try {
-      const networkResp = await fetch(request);
-
-      if (networkResp.ok) {
-        const clone = networkResp.clone();
-        const cache = await caches.open(CACHE_NAME);
-        cache.put(request, clone);
-      }
-
-      return networkResp;
-    } catch {
-      return cached; // Offline fallback
-    }
-  })());
-});
 
 // ======================
-// ACTIVATE — Take control but DO NOT clear old caches yet!
+// ACTIVATE — Cleanup old caches
 // ======================
 self.addEventListener("activate", event => {
-  console.log("⭐ New Service Worker ready (waiting user action)");
-  event.waitUntil(self.clients.claim());
+  console.log("✨ Activating new Service Worker...");
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
 });
 
+
 // ======================
-// Manual update trigger (from Update button)
+// Manual update trigger from UI button
 // ======================
 self.addEventListener("message", event => {
   if (event.data === "skipWaiting") {
-    console.log("🔁 User accepted update → Activating now!");
-
-    self.skipWaiting().then(async () => {
-      console.log("♻ Removing old caches…");
-      const keys = await caches.keys();
-      await Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      );
-      console.log("✔ Update applied! Old caches removed.");
-    });
+    console.log("🔁 Forcing SW update...");
+    self.skipWaiting();
   }
 });
