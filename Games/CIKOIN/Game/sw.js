@@ -1,7 +1,7 @@
 // ======================
 // Service Worker Config
 // ======================
-const CACHE_VERSION = "cikoin-v7"; // bump this when you update the game
+const CACHE_VERSION = "cikoin-v1.3"; // bump when assets change
 const CACHE_NAME = `cache-${CACHE_VERSION}`;
 
 const ASSETS = [
@@ -13,77 +13,101 @@ const ASSETS = [
   "./textures/snow.jpg",
 ];
 
+// Helper — re-download and replace broken cache entries
+async function repairCache(request) {
+  try {
+    const networkResp = await fetch(request, { cache: "no-store" });
+    if (networkResp && networkResp.ok) {
+      const clone = networkResp.clone();
+      const cache = await caches.open(CACHE_NAME);
+      await cache.put(request, clone);
+      console.log("🛠 Repaired:", request.url);
+      return networkResp;
+    }
+  } catch (err) {
+    console.warn("❌ Repair failed:", request.url, err);
+  }
+  return null;
+}
+
 // ======================
-// INSTALL — Cache assets
+// INSTALL — Pre-cache necessary files
 // ======================
 self.addEventListener("install", event => {
   console.log("📥 Installing Service Worker…");
-  self.skipWaiting(); // Allow immediate activation
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS).catch(err => {
-        console.warn("⚠️ Asset caching issue:", err);
-      });
+    caches.open(CACHE_NAME).then(async cache => {
+      for (const item of ASSETS) {
+        try {
+          await cache.add(item);
+        } catch {
+          console.warn("⚠️ Failed caching:", item, "→ retrying…");
+          await repairCache(item);
+        }
+      }
     })
   );
 });
 
 // ======================
-// FETCH — Stale-while-revalidate
+// FETCH — Cache-first + auto repair
 // ======================
 self.addEventListener("fetch", event => {
   const request = event.request;
-
-  // Only cache GET requests (avoid Firebase errors)
   if (request.method !== "GET") return;
 
-  event.respondWith(
-    caches.match(request).then(cached => {
-      const networkFetch = fetch(request)
-        .then(networkResp => {
-          // Don’t cache failed responses
-          if (!networkResp || networkResp.status !== 200) {
-            return networkResp;
-          }
+  event.respondWith((async () => {
+    const cached = await caches.match(request);
 
-          // Clone response BEFORE streaming it
-          const cloneResp = networkResp.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(request, cloneResp);
-          });
+    if (cached) {
+      const size = cached.headers.get("Content-Length");
+      if (!size || size === "0") {
+        console.warn("🧹 Corrupt cache → repairing:", request.url);
+        const fresh = await repairCache(request);
+        return fresh || cached;
+      }
+      return cached;
+    }
 
-          return networkResp;
-        })
-        .catch(() => cached); // If offline → use cache
+    try {
+      const networkResp = await fetch(request);
 
-      return cached || networkFetch;
-    })
-  );
+      if (networkResp.ok) {
+        const clone = networkResp.clone();
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(request, clone);
+      }
+
+      return networkResp;
+    } catch {
+      return cached; // Offline fallback
+    }
+  })());
 });
 
 // ======================
-// ACTIVATE — Remove old caches
+// ACTIVATE — Take control but DO NOT clear old caches yet!
 // ======================
 self.addEventListener("activate", event => {
-  console.log("♻ Cleaning old caches…");
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => key !== CACHE_NAME)
-          .map(key => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
-  );
+  console.log("⭐ New Service Worker ready (waiting user action)");
+  event.waitUntil(self.clients.claim());
 });
 
 // ======================
-// SUPPORT UPDATE POPUP
+// Manual update trigger (from Update button)
 // ======================
 self.addEventListener("message", event => {
   if (event.data === "skipWaiting") {
-    console.log("⏭ Skip waiting: Activating update");
-    self.skipWaiting();
+    console.log("🔁 User accepted update → Activating now!");
+
+    self.skipWaiting().then(async () => {
+      console.log("♻ Removing old caches…");
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+      );
+      console.log("✔ Update applied! Old caches removed.");
+    });
   }
 });
