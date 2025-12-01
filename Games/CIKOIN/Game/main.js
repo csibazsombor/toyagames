@@ -1541,7 +1541,7 @@ let verticalVel = 0;
 
 // 🚀 Faster player
 const WALK_BASE = isMobile ? 25 : 60;
-const RUN_BASE  = isMobile ? 70 : 140;
+const RUN_BASE  = isMobile ? 38 : 140;
 
 
 let WALK = WALK_BASE;
@@ -1553,8 +1553,8 @@ const DRAG = 0.93;   // keep momentum
 const GRAVITY = -30;
 const JUMP_FORCE = 9;
 
-let stamina = 5, STAMINA_MAX = 5;
-const DRAIN = 1.0, REGEN_MOVE = 0.7, REGEN_IDLE = 1.8;
+let stamina = 3, STAMINA_MAX = 3;
+const DRAIN = 1.1, REGEN_MOVE = 0.7, REGEN_IDLE = 1.8;
 
 // Player stats
 let health = 100; // %
