@@ -221,34 +221,45 @@ function createRemotePlayer() {
 
 // Listen to database updates for other players
 if (ROOM) {
-// Add players only when they appear
-onChildAdded(ref(db, `rooms/${ROOM}/players`), snap => {
-  const name = snap.key;
-  if (name === USER) return;
+  const playersRef = ref(db, `rooms/${ROOM}/players`);
 
-  if (!otherPlayers[name]) {
-    otherPlayers[name] = {
-      mesh: createRemotePlayer(),
-      targetPos: new THREE.Vector3(),
-      targetRot: new THREE.Quaternion(),
-      coins: 0
-    };
-  }
-});
+  onValue(playersRef, snap => {
+    const players = snap.val() || {};
 
-// Update only changed data
-onChildChanged(ref(db, `rooms/${ROOM}/players`), snap => {
-  const name = snap.key;
-  if (name === USER) return;
-  const p = otherPlayers[name];
-  const data = snap.val();
-  if (!p) return;
+    for (const name in players) {
+      if (name === USER) continue;
 
-  p.targetPos.set(data.x, data.y, data.z);
-  p.targetRot.setFromEuler(new THREE.Euler(0, data.rot, 0));
-  p.coins = data.coins || 0;
-});
-  
+      const data = players[name];
+
+      // Create remote player if not existing yet
+      if (!otherPlayers[name]) {
+        otherPlayers[name] = {
+          mesh: createRemotePlayer(),
+          targetPos: new THREE.Vector3(),
+          targetRot: new THREE.Quaternion(),
+          coins: 0
+        };
+      }
+
+      const p = otherPlayers[name];
+
+      // Update player position & rotation
+      p.targetPos.set(data.x, data.y, data.z);
+      p.targetRot.setFromEuler(new THREE.Euler(0, data.rot, 0));
+
+      // Update coins
+      p.coins = data.coins || 0;
+    }
+
+    // Check removed players and delete them
+    for (const name in otherPlayers) {
+      if (name !== USER && !players[name]) {
+        scene.remove(otherPlayers[name].mesh);
+        delete otherPlayers[name];
+      }
+    }
+  });
+
 if (ROOM) {
 
   // Sync flower states
