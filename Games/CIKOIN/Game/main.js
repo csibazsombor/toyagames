@@ -1568,15 +1568,14 @@ const up = new THREE.Vector3(0, 1, 0);
 let vel = new THREE.Vector3();
 let verticalVel = 0;
 
-// 🚀 Faster player
-const WALK_BASE = isMobile ? 12 : 90;
-const RUN_BASE  = isMobile ? 20 : 140;
-
+// 🌍 Same fast speed on all devices
+const WALK_BASE = 160;
+const RUN_BASE  = 170;
 
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
 
-const ACCEL = isMobile ? 135 : 135;   // quicker speed gain
+const ACCEL = 210;
 const DRAG = 0.93;   // keep momentum
 
 const GRAVITY = -30;
@@ -1974,9 +1973,24 @@ for (const name in otherPlayers) {
   if (powerUpTimer === 0) powerUpActive = false;
   if (powerUpTimer === 0) doubleJumpAvailable = false;
 
-  // Input vectors
-  const ix = isMobile ? moveVec.x : (keys.d - keys.a);
-  const iy = isMobile ? moveVec.y : (keys.w - keys.s);
+  // Same speed control on both platforms
+  let ix, iy;
+
+  if (isMobile) {
+    ix = moveVec.x;
+    iy = moveVec.y;
+  } else {
+    ix = keys.d - keys.a;
+    iy = keys.w - keys.s;
+
+    // Keyboard reaches 1 instantly — limit to same mobile range
+    const len = Math.hypot(ix, iy);
+    if (len > 1) {
+      ix /= len;
+      iy /= len;
+    }
+}
+
 
   const forward = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
   const right = new THREE.Vector3().crossVectors(up, forward).negate();
@@ -1994,11 +2008,19 @@ for (const name in otherPlayers) {
   const targetSpeed = (sprint ? RUN : WALK) * speedMult;
 
   // Horizontal movement
-  if(moving) {
+  // Horizontal movement
+  if (moving) {
     input.normalize();
     vel.addScaledVector(input, ACCEL * dt);
-    if(vel.length() > targetSpeed) vel.setLength(targetSpeed);
+
+    // Prevent too fast speed 🚫🚀 (IMPORTANT!)
+    if (vel.length() > targetSpeed) {
+      vel.setLength(targetSpeed);
+    }
   }
+
+  vel.multiplyScalar(DRAG);
+
   vel.multiplyScalar(DRAG);
   if (cozyGroup.visible) {
   // BUILD Saving — correct location (inside loop)
