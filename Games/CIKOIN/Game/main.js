@@ -434,9 +434,10 @@ scene.add(sun);
 
 
 function isWinter() {
-  const month = new Date().getMonth(); 
-  return (month === 10 || month === 0 || month === 1); 
+  const month = new Date().getMonth();
+  return (month >= 11 || month <= 2);
 }
+
 
 /* CUTE MAP */
 const ground = new THREE.Mesh(
@@ -1540,14 +1541,14 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🚀 Faster player
-const WALK_BASE = isMobile ? 25 : 60;
+const WALK_BASE = isMobile ? 25 : 90;
 const RUN_BASE  = isMobile ? 38 : 140;
 
 
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
 
-const ACCEL = 100;   // quicker speed gain
+const ACCEL = isMobile ? 135 : 135;   // quicker speed gain
 const DRAG = 0.93;   // keep momentum
 
 const GRAVITY = -30;
