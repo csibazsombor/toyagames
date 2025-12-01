@@ -306,7 +306,56 @@ function smoothProgress(real) {
   loaderFill.style.width = displayedProgress + "%";
   loaderPercent.textContent = Math.round(displayedProgress) + "%";
 }
+const loadingManager = new THREE.LoadingManager();
+const loader = new FBXLoader(loadingManager);
+loader.load(
+  "assets/character.fbx", 
+  fbx => {
+    playerRoot.remove(placeholderGroup);
+    const box = new THREE.Box3().setFromObject(fbx);
+    const size = box.getSize(new THREE.Vector3());
+    const scale = 1.7 / size.y;
+    fbx.scale.setScalar(scale);
+    box.setFromObject(fbx);
+    const min = box.min;
+    fbx.position.y = -min.y * scale;
+    fbx.rotation.y = MODEL_FACE_ADJUST;
+    fbx.castShadow = true;
+    fbx.receiveShadow = true;
+    fbx.traverse(child => {
+      if (child.isMesh && child.material) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+      
+        // 🌸 Perfect cute matte-toy balance
+        child.material.roughness = 0.32;     // a bit soft
+        child.material.metalness = 0.05;     // tiny highlight
+        child.material.envMapIntensity = 0.8; 
+      
+        // gentle warm self-light so shadows don't darken face
+        child.material.emissive = new THREE.Color(0xffffff);
+        child.material.emissiveIntensity = 0.005;
+      }
+    });
 
+
+    model = fbx;
+    playerRoot.add(model);
+    // Disable unnecessary bones or advanced details
+    fbx.traverse(o => {
+      if (o.isMesh) {
+        o.geometry.computeBoundsTree = undefined; // disable heavy BVH
+        o.frustumCulled = true; // auto cull if off-screen
+        o.castShadow = false; // huge perf boost
+      }
+    });
+
+        // ✅ Store for cloning remote players
+    window.originalPlayerModel = fbx;
+  },
+  undefined,
+  err => console.error("Model load failed:", err)
+);
 // =========================
 // Detailed Loading Manager
 // =========================
@@ -322,7 +371,7 @@ let currentStage = "⏳ Starting...";
 let loadedFiles = 0;
 let totalFiles = 0;
 
-const loadingManager = new THREE.LoadingManager();
+
 
 // First detect how many assets in total
 loadingManager.onStart = (url, itemsLoaded, itemsTotal) => {
@@ -399,8 +448,6 @@ loadingManager.onLoad = () => {
   // Start the actual game AFTER fade
 
 };
-
-const loader = new FBXLoader(loadingManager);
 
 
 
@@ -1291,54 +1338,7 @@ function updateHP() {
 }
 
 
-loader.load(
-  "assets/character.fbx", 
-  fbx => {
-    playerRoot.remove(placeholderGroup);
-    const box = new THREE.Box3().setFromObject(fbx);
-    const size = box.getSize(new THREE.Vector3());
-    const scale = 1.7 / size.y;
-    fbx.scale.setScalar(scale);
-    box.setFromObject(fbx);
-    const min = box.min;
-    fbx.position.y = -min.y * scale;
-    fbx.rotation.y = MODEL_FACE_ADJUST;
-    fbx.castShadow = true;
-    fbx.receiveShadow = true;
-    fbx.traverse(child => {
-      if (child.isMesh && child.material) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-      
-        // 🌸 Perfect cute matte-toy balance
-        child.material.roughness = 0.32;     // a bit soft
-        child.material.metalness = 0.05;     // tiny highlight
-        child.material.envMapIntensity = 0.8; 
-      
-        // gentle warm self-light so shadows don't darken face
-        child.material.emissive = new THREE.Color(0xffffff);
-        child.material.emissiveIntensity = 0.005;
-      }
-    });
 
-
-    model = fbx;
-    playerRoot.add(model);
-    // Disable unnecessary bones or advanced details
-    fbx.traverse(o => {
-      if (o.isMesh) {
-        o.geometry.computeBoundsTree = undefined; // disable heavy BVH
-        o.frustumCulled = true; // auto cull if off-screen
-        o.castShadow = false; // huge perf boost
-      }
-    });
-
-        // ✅ Store for cloning remote players
-    window.originalPlayerModel = fbx;
-  },
-  undefined,
-  err => console.error("Model load failed:", err)
-);
 
 // NAME + RANK LABEL
 const nameDiv = document.createElement("div");
@@ -1787,8 +1787,12 @@ for (const name in otherPlayers) {
     p.walkTime += dt * 3; // slower animation
     const bob = Math.sin(p.walkTime) * 0.03;
     const sway = Math.sin(p.walkTime * 2) * 0.03;
-    p.mesh.position.y = bob;
-    p.mesh.rotation.z = sway;
+    if (p.mesh.children[0]) {
+        const mdl = p.mesh.children[0];
+        mdl.position.y = bob;
+        mdl.rotation.z = sway;
+    }
+
   } else {
     p.mesh.position.y += (0 - p.mesh.position.y) * 0.12;
     p.mesh.rotation.z += (0 - p.mesh.rotation.z) * 0.12;
@@ -1805,11 +1809,6 @@ for (const name in otherPlayers) {
   // Smooth position + rotation based on target vectors
   p.mesh.position.lerp(p.targetPos, 0.12);
   p.mesh.quaternion.slerp(p.targetRot, 0.12);
-
-  
-  // Adjust facing direction including FBX mouth direction
-  p.mesh.rotation.y = p.mesh.rotation.y; // keep yaw override
-
 }
 
 
