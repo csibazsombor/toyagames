@@ -2008,17 +2008,20 @@ for (const name in otherPlayers) {
   const speedMult = (powerUpActive ? 1.35 : 1) * (speedBoostTimer>0 ? 1.55 : 1);
   const targetSpeed = (sprint ? RUN : WALK) * speedMult;
 
-  // Horizontal movement
-  // Horizontal movement
-  if (moving) {
-    input.normalize();
-    vel.addScaledVector(input, ACCEL * dt);
+    // ABSOLUTE CONTROLLED MOVEMENT 🔒
+    const MAX_WALK = 15;   // SUPER slow walk speed
+    const MAX_RUN  = 20;   // Slight sprint boost
+    const isSprint = stamina > 0.1 && moving;
 
-    // Prevent too fast speed 🚫🚀 (IMPORTANT!)
-    if (vel.length() > targetSpeed) {
-      vel.setLength(targetSpeed);
+    const finalSpeed = isSprint ? MAX_RUN : MAX_WALK;
+
+    if (moving) {
+        input.normalize();
+        vel.copy(input).multiplyScalar(finalSpeed); // DIRECT SPEED — NO ACCELERATION
+    } else {
+        vel.set(0, 0, 0); // stop instantly when no input
     }
-  }
+
 
   vel.multiplyScalar(DRAG);
 
