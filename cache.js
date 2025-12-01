@@ -1,40 +1,43 @@
-(function() {
-    var version = '1.0';  // Change this version number whenever you make updates
+(function () {
+    const VERSION = "1.2"; // Update version when files change
+    const QUERY = `v=${VERSION}`;
 
-    // List of files to update
-    var filesToCacheBust = [
-        'CSS/style.css',
-        'CSS/fonts.css',
-        'FONTS',
-    ];
+    /**
+     * Adds/updates version param on a URL
+     */
+    function addVersion(url) {
+        const u = new URL(url, location.origin);
 
-    // Function to append version query string to URLs
-    function cacheBust(url) {
-        return url + '?v=' + version;
+        // If already has ?v= parameter → update it
+        if (u.searchParams.has('v')) {
+            u.searchParams.set('v', VERSION);
+        } else {
+            u.searchParams.append('v', VERSION);
+        }
+
+        return u.toString();
     }
 
-    // Update link tags for CSS
-    var linkTags = document.querySelectorAll('link[rel="stylesheet"]');
-    linkTags.forEach(function(link) {
-        link.href = cacheBust(link.href);
-    });
+    /**
+     * Update all matching elements of given selector and attribute
+     */
+    function update(selector, attr) {
+        document.querySelectorAll(selector).forEach(el => {
+            const oldValue = el.getAttribute(attr);
 
-    // Update script tags for JavaScript
-    var scriptTags = document.querySelectorAll('script[src]');
-    scriptTags.forEach(function(script) {
-        script.src = cacheBust(script.src);
-    });
+            if (!oldValue) return;
+            if (oldValue.includes(QUERY)) return; // already updated
 
-    // Update other specific files
-    filesToCacheBust.forEach(function(file) {
-        var elements = document.querySelectorAll('[src="' + file + '"], [href="' + file + '"]');
-        elements.forEach(function(element) {
-            if (element.src) {
-                element.src = cacheBust(element.src);
-            }
-            if (element.href) {
-                element.href = cacheBust(element.href);
-            }
+            el.setAttribute(attr, addVersion(oldValue));
         });
-    });
+    }
+
+    // Update standard assets
+    update('link[rel="stylesheet"]', 'href');
+    update('script[src]', 'src');
+    update('img[src]', 'src');
+
+    // Optional: update fonts + other assets
+    update('link[href*=".woff"], link[href*=".woff2"], link[href*=".ttf"]', 'href');
+    update('[data-cache]', 'src'); // custom attribute for manual targeting
 })();

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head manifest="app_cache.appcache">
+<head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>CIKOIN - Menu</title>
@@ -17,7 +17,7 @@
                     <h2>Continue?</h2>
                     <p>We noticed that you played before, you can continue to play on the same server</p>
                     <button onclick="Continue();">Continue</button><br><br>
-                    <button class="delete-save" onclick="delete_save = true;">Delete</button>
+                    <button class="delete-save" onclick="checkSavedData(true)">Delete</button>
                  </div>
           <select name="" id="who-play">
                   <option value="">Who Plays?</option>
@@ -109,4 +109,5 @@
         <script src="JS/game.js"></script>
         <script src="JS/loader.js"></script>
         <script src="JS/sounds.js"></script>
+        <script src="JS/auto-optimize.js"></script>
 </html>

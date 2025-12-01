@@ -40,28 +40,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
 let alreadyWarned = false; // Prevent repeated warning
 
-function checkSavedData() {
+async function clearAllSiteData() {
+    try {
+        // Clear localStorage + sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // Delete all Cache Storage (PWA, assets, game files)
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            for (const name of cacheNames) {
+                await caches.delete(name);
+            }
+        }
+
+        // Delete all IndexedDB databases if exist
+        if (window.indexedDB) {
+            const dbs = await indexedDB.databases();
+            dbs.forEach(db => {
+                indexedDB.deleteDatabase(db.name);
+            });
+        }
+
+        console.log("🔄 Full cleanup completed!");
+    } catch (err) {
+        console.error("Error clearing data:", err);
+    }
+}
+
+function checkSavedData(delete_save = false) {
     const username = localStorage.getItem("username");
     const room = localStorage.getItem("room_code");
 
     if (username || room) {
         if (delete_save) {
-            localStorage.removeItem("username");
-            localStorage.removeItem("room_code");
+            clearAllSiteData();
             continue_div.style.display = "none";
-            alreadyWarned = false; // reset warning if save is deleted
+            alreadyWarned = false;
         } else {
             if (!alreadyWarned) {
-                console.warn("Saved datas detected");
+                console.warn("⚠️ Saved data detected");
                 alreadyWarned = true;
             }
             continue_div.style.display = "block";
         }
     } else {
         continue_div.style.display = "none";
-        alreadyWarned = false; // reset when nothing is saved
+        alreadyWarned = false;
     }
 }
+
 
 checkSavedData();
 setInterval(checkSavedData, 300);
