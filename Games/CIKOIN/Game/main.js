@@ -300,10 +300,9 @@ function smoothProgress(real) {
 // Detailed Loading Manager
 // =========================
 let loadStages = [
-  { keyword: ".fbx",     name: "🐾 Loading Character Model" },
   { keyword: ".jpg",     name: "🖼️ Loading Textures" },
   { keyword: ".png",     name: "🖼️ Loading Images" },
-  { keyword: ".glb",     name: "📦 Loading 3D Assets" },
+  { keyword: ".fbx",     name: "📦 Loading 3D Assets" },
   { keyword: "firebase", name: "⛓️ Connecting Multiplayer" },
   { keyword: "levels",   name: "🌍 Generating World" },
 ];
@@ -1541,14 +1540,14 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🚀 Faster player
-const WALK_BASE = isMobile ? 30 : 60;
-const RUN_BASE  = isMobile ? 90 : 165;
+const WALK_BASE = isMobile ? 25 : 60;
+const RUN_BASE  = isMobile ? 70 : 140;
 
 
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
 
-const ACCEL = 140;   // quicker speed gain
+const ACCEL = 100;   // quicker speed gain
 const DRAG = 0.93;   // keep momentum
 
 const GRAVITY = -30;
