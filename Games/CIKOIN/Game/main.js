@@ -1980,8 +1980,9 @@ for (const name in otherPlayers) {
     ix = moveVec.x;
     iy = moveVec.y;
   } else {
-    ix = keys.d - keys.a;
-    iy = keys.w - keys.s;
+  ix = (keys.d - keys.a) * 0.6;
+  iy = (keys.w - keys.s) * 0.6;
+
 
     // Keyboard reaches 1 instantly — limit to same mobile range
     const len = Math.hypot(ix, iy);
