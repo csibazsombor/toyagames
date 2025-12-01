@@ -1,4 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164.0/build/three.module.js";
+import * as THREE from "three";
 import { FBXLoader } from "https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/loaders/FBXLoader.js";
 import { CSS2DRenderer, CSS2DObject } 
   from "https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/renderers/CSS2DRenderer.js";
