@@ -16,20 +16,23 @@ html, body { height:100%; }
   --inset-right: env(safe-area-inset-right, 0px);
   --inset-bottom: env(safe-area-inset-bottom, 0px);
   --inset-left: env(safe-area-inset-left, 0px);
+  
+  --glass-bg: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glow-color: rgba(251, 191, 36, 0.6);
 }
 
 /* ====== Base ====== */
 body { 
   height:100%;
   overflow:hidden; 
-  font-family:'story';
+  font-family:'story', 'Segoe UI', sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   user-select: none;
   -webkit-user-select: none;
   touch-action: none;
 }
 
-/* Remove focus outlines */
 button, input, select, textarea { outline: none; }
 
 /* ====== Game Canvas ====== */
@@ -54,57 +57,109 @@ canvas {
 #loading-screen {
   position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, #89cff0, #b19cff);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 18px;
+  gap: 24px;
   color: white;
   z-index: 9999999;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.8s ease;
 }
 
-/* TEAM SCORE (Small + Center Top on all devices) */
+.loader-cat {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.loader-cat img {
+  height: 200px;
+  border-radius: 20px;
+  box-shadow: 
+    0 15px 35px rgba(0,0,0,0.3),
+    0 5px 15px rgba(255,255,255,0.1);
+  filter: drop-shadow(0 0 20px rgba(255,255,255,0.4));
+  transition: transform 0.3s ease;
+}
+
+#loader-text {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-shadow: 0 0 20px rgba(255,255,255,0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+#loader-bar {
+  width: 300px;
+  height: 8px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
+}
+
+#loader-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24);
+  background-size: 200% 100%;
+  border-radius: 20px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+#loader-percent {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+}
+
+/* ====== TEAM SCORE ====== */
 #teamScore {
   position: fixed;
-  top: calc(var(--inset-top) + 14px);
+  top: calc(var(--inset-top) + 16px);
   left: 50%;
   transform: translateX(-50%);
   
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(10px);
+  padding: 10px 24px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.3));
+  border-radius: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px);
 
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 0 0 8px rgba(255,255,255,0.5);
+  text-shadow: 
+    0 0 10px rgba(251, 191, 36, 0.8),
+    0 2px 4px rgba(0,0,0,0.3);
 
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  box-shadow: 
+    0 8px 20px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.3);
+  
   z-index: 10000;
   pointer-events: none;
+  
 }
 
-/* Optional: tiny gentle pulse, not too flashy */
-#teamScore {
-  animation: scorePulse 2s ease-in-out infinite alternate;
-}
-@keyframes scorePulse {
-  from { filter: drop-shadow(0 0 4px rgba(255,255,255,0.3)); }
-  to   { filter: drop-shadow(0 0 10px rgba(255,255,255,0.65)); }
-}
-/* Move Team Score slightly lower on mobile */
-@media (max-width: 768px) {
-  #teamScore {
-    top: calc(var(--inset-top) + 48px); /* was 14px → now lower */
-    font-size: 17px;
-    padding: 6px 14px;
-  }
-
-}
 
 
 /* ====== Debug HUD (#ui) ====== */
@@ -113,66 +168,135 @@ canvas {
   top: calc(var(--inset-top) + 16px);
   left: calc(var(--inset-left) + 16px);
   color:#fff;
-  text-shadow:0 3px 6px rgba(0,0,0,0.4);
-  font-size:16px; font-weight:bold;
-  padding:12px 18px;
-  background:rgba(255,255,255,0.16);
-  border-radius:16px;
-  border:3px solid rgba(255,255,255,0.28);
-  backdrop-filter:blur(10px);
+  text-shadow:0 2px 8px rgba(0,0,0,0.5);
+  font-size:17px; 
+  font-weight:bold;
+  padding:14px 20px;
+  background: var(--glass-bg);
+  border-radius:20px;
+  border:2px solid var(--glass-border);
+  backdrop-filter:blur(16px);
   pointer-events:none;
+  box-shadow: 
+    0 8px 32px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  
+  animation: slideInLeft 0.6s ease-out;
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-50px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 /* ====== Stamina Bar ====== */
 #stamina {
   position: fixed;
-  width: 320px;
-  height: 28px;
+  width: 340px;
+  height: 32px;
   left:50%; transform:translateX(-50%);
-  bottom: calc(var(--inset-bottom) + 60px);
-  background: rgba(255,255,255,0.2);
-  border-radius: 20px;
-  border: 3px solid rgba(255,255,255,0.55);
-  backdrop-filter:blur(12px);
+  bottom: calc(var(--inset-bottom) + 70px);
+  background: rgba(0,0,0,0.3);
+  border-radius: 25px;
+  border: 2px solid var(--glass-border);
+  backdrop-filter:blur(16px);
   overflow:hidden;
+  box-shadow: 
+    0 8px 24px rgba(0,0,0,0.3),
+    inset 0 2px 4px rgba(0,0,0,0.2);
+  
+  animation: slideInBottom 0.6s ease-out 0.2s both;
 }
+
+@keyframes slideInBottom {
+  from { opacity: 0; transform: translateX(-50%) translateY(50px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 #staminaFill {
   height:100%;
   background: linear-gradient(90deg, #fbbf24, #f59e0b);
-  transition: width 0.25s ease;
+  transition: width 0.25s ease, background 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(251, 191, 36, 0.6),
+    inset 0 2px 4px rgba(255,255,255,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+#staminaFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255,255,255,0.4), 
+    transparent
+  );
+}
+
+#staminaLabel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 13px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 1;
+  letter-spacing: 1px;
 }
 
 /* ====== Inventory Display ====== */
 #inventory {
   position: fixed;
-  bottom: calc(var(--inset-bottom) + 110px);
+  bottom: calc(var(--inset-bottom) + 120px);
   left: 50%; transform: translateX(-50%);
-  padding: 10px 18px;
-  background: rgba(255,255,255,0.25);
-  border-radius: 20px;
-  border:3px solid rgba(255,255,255,0.6);
-  backdrop-filter:blur(10px);
-  font-size:20px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3));
+  border-radius: 25px;
+  border:2px solid rgba(255,255,255,0.5);
+  backdrop-filter:blur(16px);
+  font-size:22px;
   font-weight:bold;
   color:white;
-  box-shadow:0 6px 18px rgba(0,0,0,0.25);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.3);
   pointer-events:none;
+  
+  animation: slideInBottom 0.6s ease-out 0.4s both;
 }
 
 /* ====== Potion Button (Mobile) ====== */
 #potionBtn {
   display:none;
   position: fixed;
-  bottom: calc(var(--inset-bottom) + 140px);
-  right: calc(var(--inset-right) + 20px);
-  width:70px; height:70px;
+  bottom: calc(var(--inset-bottom) + 160px);
+  right: calc(var(--inset-right) + 24px);
+  width:75px; height:75px;
   border-radius:50%;
   background:linear-gradient(135deg,#ff6b6b,#fa5252);
   border:3px solid rgba(255,255,255,0.7);
   color:white;
-  font-size:26px; font-weight:900;
-  backdrop-filter:blur(12px);
-  box-shadow:0 8px 25px rgba(0,0,0,0.3);
+  font-size:28px; font-weight:900;
+  backdrop-filter:blur(16px);
+  box-shadow:
+    0 10px 30px rgba(255, 107, 107, 0.5),
+    inset 0 2px 4px rgba(255,255,255,0.3);
+  
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#potionBtn:active { 
+  transform:scale(0.9); 
+  box-shadow: 0 5px 15px rgba(255, 107, 107, 0.6);
 }
 
 /* ====== Desktop Controls Box ====== */
@@ -180,93 +304,313 @@ canvas {
   position:fixed;
   top: calc(var(--inset-top) + 16px);
   right: calc(var(--inset-right) + 16px);
-  background:rgba(255,255,255,0.16);
-  padding:18px;
-  border-radius:18px;
-  border:3px solid rgba(255,255,255,0.28);
+  background: var(--glass-bg);
+  padding:20px;
+  border-radius:20px;
+  border:2px solid var(--glass-border);
   color:#fff;
-  font-size:13px;
+  font-size:14px;
   pointer-events:none;
-  backdrop-filter:blur(10px);
-  box-shadow:0 8px 20px rgba(0,0,0,0.3);
+  backdrop-filter:blur(16px);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  
+  animation: slideInRight 0.6s ease-out;
 }
-#controls h3 { color:#fbbf24; margin-bottom:10px; }
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(50px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+#controls h3 { 
+  color:#fbbf24; 
+  margin-bottom:12px;
+  font-size: 16px;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+}
+
+#controls p {
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.key {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  min-width: 60px;
+  text-align: center;
+}
 
 /* ====== Mobile Joystick ====== */
 #gamepad {
   display:none;
   position:fixed;
-  bottom: calc(var(--inset-bottom) + 24px);
-  left: calc(var(--inset-left) + 22px);
-  width:140px; height:140px;
-  background:rgba(255,255,255,0.2);
+  bottom: calc(var(--inset-bottom) + 26px);
+  left: calc(var(--inset-left) + 24px);
+  width:150px; height:150px;
+  background: var(--glass-bg);
   border-radius:50%;
-  border:4px solid rgba(255,255,255,0.4);
-  backdrop-filter:blur(10px);
-  box-shadow:0 8px 25px rgba(0,0,0,0.3);
-}
-#stick {
-  position:absolute; top:50%; left:50%;
-  width:55px; height:55px;
-  background:linear-gradient(135deg, #fbbf24, #f59e0b);
-  border-radius:50%;
-  border:4px solid rgba(255,255,255,0.8);
-  transform:translate(-50%,-50%);
+  border:3px solid var(--glass-border);
+  backdrop-filter:blur(16px);
+  box-shadow:
+    0 10px 30px rgba(0,0,0,0.3),
+    inset 0 2px 8px rgba(255,255,255,0.1);
+  
+  animation: scaleIn 0.5s ease-out;
 }
 
-img{
-  height: 200px;
-  border-radius: 15px;
-  box-shadow: 0 10px 0px #c5d4f7;
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.5); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+#stick {
+  position:absolute; top:50%; left:50%;
+  width:60px; height:60px;
+  background:linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,0.9);
+  transform:translate(-50%,-50%);
+  box-shadow: 
+    0 4px 12px rgba(251, 191, 36, 0.5),
+    inset 0 2px 4px rgba(255,255,255,0.3);
+  
+  transition: none;
+}
+
+#stick::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
 }
 
 /* ====== Mobile Jump Button ====== */
 #jumpBtn {
   display:none;
   position:fixed;
-  bottom: calc(var(--inset-bottom) + 26px);
-  right: calc(var(--inset-right) + 24px);
-  width:80px; height:80px;
+  bottom: calc(var(--inset-bottom) + 28px);
+  right: calc(var(--inset-right) + 26px);
+  width:85px; height:85px;
   background:linear-gradient(135deg,#ec4899,#8b5cf6);
   border-radius:50%;
-  border:4px solid rgba(255,255,255,0.5);
+  border:3px solid rgba(255,255,255,0.6);
   color:white;
-  font-size:16px; font-weight:bold;
-  backdrop-filter:blur(10px);
-  box-shadow:0 8px 25px rgba(0,0,0,0.3);
+  font-size:15px; 
+  font-weight:900;
+  backdrop-filter:blur(16px);
+  box-shadow:
+    0 10px 30px rgba(139, 92, 246, 0.5),
+    inset 0 2px 4px rgba(255,255,255,0.3);
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: scaleIn 0.5s ease-out 0.1s both;
 }
-#jumpBtn:active { transform:scale(0.9); }
 
-/* ====== Soft Glow Animation ====== */
-#ui, #teamScore, #stamina, #gamepad, #jumpBtn, #inventory, #potionBtn {
-  animation: softGlow 3s ease-in-out infinite alternate;
+#jumpBtn:active { 
+  transform:scale(0.85); 
+  box-shadow: 0 5px 15px rgba(139, 92, 246, 0.6);
 }
-@keyframes softGlow {
-  from { filter: drop-shadow(0 0 0 rgba(255,255,255,0.28)); }
-  to   { filter: drop-shadow(0 0 14px rgba(255,255,255,0.55)); }
+
+#jumpBtn::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #ec4899, #8b5cf6, #ec4899);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+  z-index: -1;
+  opacity: 0.6;
+  filter: blur(8px);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ====== Announcement ====== */
+#announcement {
+  display: none;
+  position:fixed; 
+  top:50%; 
+  left:50%;
+  transform:translate(-50%, -50%) scale(0);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.226), rgba(255,255,255,0.85));
+  color: #1f2937; 
+  padding:24px 32px; 
+  border-radius:20px;
+  font-size: 20px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 
+    0 20px 60px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  border: 2px solid rgba(255,255,255,0.5);
+  backdrop-filter: blur(20px);
+  z-index: 10001;
+  
+  animation: popIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes popIn {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* ====== Admin Panel ====== */
+#adminPanel {
+  position:fixed; 
+  top:20px; 
+  right:20px;
+  background: rgba(255,255,255,0.95);
+  padding:16px;
+  border-radius:20px; 
+  display:none; 
+  z-index:2000;
+  backdrop-filter: blur(16px);
+  border: 2px solid rgba(255,255,255,0.5);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#adminPanel button {
+  display: block;
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+#adminPanel button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+}
+
+#adminPanel button:active {
+  transform: translateY(0);
+}
+
+/* ====== Update Popup ====== */
+#update-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(17, 17, 17, 0.95);
+  color: #fff;
+  padding: 16px 20px;
+  border-radius: 16px;
+  font-family: sans-serif;
+  display: none;
+  backdrop-filter: blur(12px);
+  border: 2px solid #3ff;
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(51, 255, 255, 0.3);
+  animation: slideInRight 0.5s ease-out;
+}
+
+#update-btn {
+  margin-left: 12px;
+  background: linear-gradient(135deg, #00d4ff, #0099ff);
+  border: none;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  color: white;
+}
+
+#update-btn:hover {
+  transform: scale(1.05);
 }
 
 /* ====== Mobile Layout Tweaks ====== */
 @media (max-width:768px) {
-  #stamina {
-    top: calc(var(--inset-top) + 10px);
-    bottom:auto;
-    width:min(78vw,460px);
-    height:22px;
+  #teamScore {
+    top: calc(var(--inset-top) + 52px);
+    font-size: 18px;
+    padding: 8px 20px;
   }
+  
+  #stamina {
+    top: calc(var(--inset-top) + 12px);
+    bottom:auto;
+    width:min(80vw,400px);
+    height:26px;
+  }
+  
   #ui {
-    top: calc(var(--inset-top) + 42px);
+    top: calc(var(--inset-top) + 48px);
     left: calc(var(--inset-left) + 14px);
     font-size:15px;
-    padding:10px 14px;
+    padding:12px 16px;
   }
-  #gamepad { width:150px; height:150px; }
-  #stick { width:60px; height:60px; }
-  img {
-  height: 140px;
-  border-radius: 15px;
-  box-shadow: 0 10px 0px #c5d4f7;
+  
+  #inventory {
+    bottom: calc(var(--inset-bottom) + 100px);
+    font-size: 20px;
+    padding: 10px 20px;
+  }
+  
+  #gamepad { 
+    width:155px; 
+    height:155px; 
+  }
+  
+  #stick { 
+    width:65px; 
+    height:65px; 
+  }
+  
+  .loader-cat img {
+    height: 140px;
+  }
+  
+  #controls {
+    display: none;
+  }
 }
+
+/* ====== Subtle Glow Effects ====== */
+#teamScore, #ui, #stamina, #inventory, #gamepad, #jumpBtn {
+  animation: gentleGlow 4s ease-in-out infinite alternate;
+}
+
+@keyframes gentleGlow {
+  from { 
+    filter: drop-shadow(0 0 4px var(--glow-color)); 
+  }
+  to { 
+    filter: drop-shadow(0 0 12px var(--glow-color)); 
+  }
 }
 
 </style>
@@ -274,73 +618,44 @@ img{
 </head>
 
 <body>
-  <div id="update-popup" style="
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  background: #111d;
-  color: #fff;
-  padding: 14px 18px;
-  border-radius: 8px;
-  font-family: sans-serif;
-  display: none;
-  backdrop-filter: blur(4px);
-  border: 1px solid #3ff;
-  z-index: 9999;
-">
-  🔄 New update available!
-  <button id="update-btn" style="
-    margin-left: 10px;
-    background: #0af;
-    border: none;
-    padding: 6px 10px;
-    font-size: 14px;
-    border-radius: 4px;
-    cursor: pointer;
-  ">Update</button>
-</div>
-
-<div id="loading-screen">
-  <div class="loader-cat">
-    <img src="../../../Screenshots/Screenshot_2.png" alt="loading cat">
+  <div id="update-popup">
+    🔄 New update available!
+    <button id="update-btn">Update</button>
   </div>
-  <div id="loader-text">Loading...</div>
-  <div id="loader-bar">
-    <div id="loader-fill"></div>
+
+  <div id="loading-screen">
+    <div class="loader-cat">
+      <img src="../../../Screenshots/Screenshot_2.png" alt="loading cat">
+    </div>
+    <div id="loader-text">Loading...</div>
+    <div id="loader-bar">
+      <div id="loader-fill"></div>
+    </div>
+    <div id="loader-percent">0%</div>
   </div>
-  <div id="loader-percent">0%</div>
-</div>
-</div>
 
-<div id="adminPanel" style="
-  position:absolute; top:20px; right:20px;
-  background:#ffffffaa; padding:12px;
-  border-radius:15px; display:none; z-index:2000;">
-  <button id="spawnCoinBtn">Spawn Coin</button>
-  <button id="boostBtn">Double Coins (20s)</button>
-  <button id="msgBtn">Send Message</button>
-  <button id="removeCoinsBtn">Remove All Coins</button>
-  <button id="resetFlowersBtn">Reset Flowers</button>
-  <button id="resetChestsBtn">Reset Chests</button>
-  <button id="forcePortalBtn">Force Portal</button>
-  <button id="unlockVillageBtn">Unlock Village</button>
-  <button id="tpVillageBtn">TP All to Village</button>
-  <button id="clearEventsBtn">Clear Events</button>
+  <div id="adminPanel">
+    <button id="spawnCoinBtn">Spawn Coin</button>
+    <button id="boostBtn">Double Coins (20s)</button>
+    <button id="msgBtn">Send Message</button>
+    <button id="removeCoinsBtn">Remove All Coins</button>
+    <button id="resetFlowersBtn">Reset Flowers</button>
+    <button id="resetChestsBtn">Reset Chests</button>
+    <button id="forcePortalBtn">Force Portal</button>
+    <button id="unlockVillageBtn">Unlock Village</button>
+    <button id="tpVillageBtn">TP All to Village</button>
+    <button id="clearEventsBtn">Clear Events</button>
+  </div>
 
-</div>
-<div id="announcement" style="
-  position:absolute; top:50%; left:50%;
-  transform:translate(-50%, -50%);
-  background:#c7c7c7; color: black; padding:16px; border-radius:10px; display:none;">
-</div>
+  <div id="announcement"></div>
 
+  <div id="teamScore">TEAM SCORE: 0</div>
+  <div id="inventory">🍎 0</div>
 
-    <div id="teamScore"></div>
-    <div id="inventory"></div>
-
+  <div id="ui">🪙 0</div>
  
   <div id="stamina">
-    <div id="staminaFill" style="width:100%"></div>
+    <div id="staminaFill"></div>
     <div id="staminaLabel">⚡ ENERGY</div>
   </div>
   
@@ -350,12 +665,15 @@ img{
   
   <div id="jumpBtn">JUMP</div>
   
+  <button id="potionBtn">Q</button>
+  
   <div id="controls">
     <h3>🎮 Controls</h3>
     <p><span class="key">WASD</span> Move</p>
     <p><span class="key">Sprint</span> Auto</p>
     <p><span class="key">Mouse</span> Camera</p>
     <p><span class="key">Space</span> Jump</p>
+    <p><span class="key">Q</span> Use Potion</p>
   </div>
 
 <script type="importmap">

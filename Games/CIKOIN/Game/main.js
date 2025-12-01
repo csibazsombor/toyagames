@@ -1414,6 +1414,7 @@ if(isMobile) {
 
   const JOYSTICK_RADIUS = 70;
   const STICK_MAX_DISTANCE = 50;
+  const SENSITIVITY = 0.65; // Lower = less sensitive (0.5 = half speed, 1.0 = full)
   let activeTouch = null;
   
   const updateJoystick = (touch) => {
@@ -1429,13 +1430,14 @@ if(isMobile) {
       dy = Math.sin(angle) * STICK_MAX_DISTANCE;
     }
     stick.style.transform = `translate(${dx}px, ${dy}px)`;
-    moveVec.set(dx / STICK_MAX_DISTANCE, -dy / STICK_MAX_DISTANCE);
+    // Apply sensitivity to movement vector
+    moveVec.set((dx / STICK_MAX_DISTANCE) * SENSITIVITY, (-dy / STICK_MAX_DISTANCE) * SENSITIVITY);
   };
   
   const resetJoystick = () => {
     stick.style.transform = "translate(0px, 0px)";
-    stick.style.transition = "transform 0.1s ease-out";
-    setTimeout(() => { stick.style.transition = "none"; }, 100);
+    stick.style.transition = "transform 0.15s ease-out";
+    setTimeout(() => { stick.style.transition = "none"; }, 150);
     moveVec.set(0, 0);
     activeTouch = null;
   };
@@ -1444,15 +1446,16 @@ if(isMobile) {
     e.preventDefault();
     if(activeTouch === null && e.touches.length > 0) {
       activeTouch = e.touches[0].identifier;
+      stick.style.transition = "none"; // Instant response on touch
       updateJoystick(e.touches[0]);
     }
   }, {passive: false});
   
-  document.addEventListener("touchmove", (e) => {
+  gp.addEventListener("touchmove", (e) => {
+    e.preventDefault();
     if(activeTouch !== null) {
       for(let i = 0; i < e.touches.length; i++) {
         if(e.touches[i].identifier === activeTouch) {
-          e.preventDefault();
           updateJoystick(e.touches[i]);
           break;
         }
@@ -1460,8 +1463,22 @@ if(isMobile) {
     }
   }, {passive: false});
   
-  document.addEventListener("touchend", () => { if(activeTouch!==null) resetJoystick(); });
-  document.addEventListener("touchcancel", () => { if(activeTouch!==null) resetJoystick(); });
+  gp.addEventListener("touchend", (e) => {
+    if(activeTouch !== null) {
+      for(let i = 0; i < e.changedTouches.length; i++) {
+        if(e.changedTouches[i].identifier === activeTouch) {
+          resetJoystick();
+          break;
+        }
+      }
+    }
+  }, {passive: false});
+  
+  gp.addEventListener("touchcancel", (e) => {
+    if(activeTouch !== null) {
+      resetJoystick();
+    }
+  }, {passive: false});
 
   // Jump button for mobile
   let jumpActive = false;
@@ -1552,8 +1569,8 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🚀 Faster player
-const WALK_BASE = isMobile ? 25 : 90;
-const RUN_BASE  = isMobile ? 38 : 140;
+const WALK_BASE = isMobile ? 12 : 90;
+const RUN_BASE  = isMobile ? 20 : 140;
 
 
 let WALK = WALK_BASE;
