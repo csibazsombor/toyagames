@@ -9,6 +9,7 @@ body {
 /* Startup visibility control */
 .menu { display: block; }
 .loading,
+.talents,
 .characters,
 .server,
 .room,
@@ -49,6 +50,67 @@ h1 {
   border-radius: 9999px;
   cursor: pointer;
   box-shadow: 0 4px 0px #c56060;
+}
+.talents-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.talents-container button {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(6px);
+  border: 2px solid rgba(177, 166, 241, 0.4);
+  border-radius: 20px;
+  padding: 12px;
+  color: rgb(177, 166, 241);
+  font-family: "story";
+  font-size: 20px;
+  cursor: pointer;
+  width: 150px;
+  transition: 
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.talents-container button img {
+  width: 100px;
+  height: auto;
+  margin-bottom: 8px;
+}
+
+/* Hover Effect */
+.talents-container button:hover {
+  transform: translateY(-6px) scale(1.05);
+  background: rgba(177, 166, 241, 0.15);
+  border-color: rgba(199, 191, 255, 0.9);
+  box-shadow: 0 0 10px rgba(177, 166, 241, 0.6);
+}
+
+/* Active (click) */
+.talents-container button:active {
+  transform: scale(0.95);
+}
+
+/* Selected State (JS can add this class) */
+.talents-container button.selected {
+  background: rgba(177, 166, 241, 0.35);
+  border-color: #fff;
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.7);
+  transform: translateY(-3px) scale(1.03);
+}
+
+/* Keep selected state strong — do NOT fade when hovered or after animation */
+.talents-container button.selected,
+.talents-container button.selected:hover {
+  background: rgba(177, 166, 241, 0.45);
+  border-color: #ffffff;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.9);
+  transform: translateY(-4px) scale(1.07);
+  opacity: 1 !important;
 }
 
 .delete-save:hover{
@@ -94,7 +156,7 @@ select option:checked { background: #ffd1aa; font-weight: bold; }
 select:focus, input:focus {
   outline: none;
   transform: translateY(-2px);
-  box-shadow: 0 5px 0px #e1b48e;
+  box-shadow: 0 5px 0px #e6d4c5;
 }
 select:hover, input:hover {
   background: #ffd9b5;
@@ -147,6 +209,11 @@ button:active {
   background: #ffb6b6;
   color: white;
   box-shadow: 0 4px 0px #d68888;
+}
+.talents-select {
+  background: #d7ffb6;
+  color: white;
+  box-shadow: 0 4px 0px #abd688;
 }
 
 /* Room player list */

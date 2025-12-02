@@ -1,29 +1,171 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Toya Games</title>
-        <link rel="stylesheet" href="CSS/style.css">
-        <link rel="stylesheet" href="CSS/fonts.css">
-        <link rel="stylesheet" href="https://csibazsombor.github.io/csibazsombor/CSS/tel.css">
-        <link rel="shortcut icon" href="favicon/favicon.ico" type="image/x-icon">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toya Games</title>
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="stylesheet" href="CSS/fonts.css">
+    <link rel="stylesheet" href="https://csibazsombor.github.io/csibazsombor/CSS/tel.css">
+    <link rel="shortcut icon" href="favicon/favicon.ico" type="image/x-icon">
+    <style>
+        .details-button {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            font-size: 0.9rem;
+            color: #764ba2;
+            background: rgba(118, 75, 162, 0.1);
+            border: 2px solid #764ba2;
+            border-radius: 9999px;
+            text-decoration: none;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: 0.3s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .details-button:hover {
+            background: rgba(118, 75, 162, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .game-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, opacity 0.4s ease, margin 0.4s ease;
+            opacity: 0;
+            margin: 0;
+        }
+
+        .game-details.show {
+            max-height: 800px;
+            opacity: 1;
+            margin: 15px 0;
+        }
+
+        .game-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+            margin: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .game-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 3px;
+        }
+
+        .game-description {
+            color: #555;
+            line-height: 1.6;
+            margin: 15px 0;
+            text-align: left;
+            padding: 0 10px;
+        }
+
+        .features-list {
+            text-align: left;
+            margin: 15px 0;
+            padding-left: 20px;
+            color: #555;
+        }
+
+        .features-list li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            .game-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .features-list {
+                font-size: 0.9em;
+            }
+        }
+    </style>
 </head>
 <body>
-        <div class="header">
-        <h2>Toya games</h2></div>
+    <div class="header">
+        <h2>Toya Games</h2>
+    </div>
 
-
-        <p style="text-align: center;">More games coming soon..</p>
-        <div class="games">
-                <div class="game-container">
-                        <img src="Screenshots/Screenshot_2.png" alt="" height="140"><br><br>
-                        <div class="title-cikoin">CIKOIN</div><p>
-                                By: Csiba Zsombor
-                        </p>
-                        <a href="Games/CIKOIN/index.html">Play</a>
+    <p style="text-align: center;">More games coming soon..</p>
+    
+    <div class="games">
+        <div class="game-container">
+            <div class="title-cikoin">CIKOIN</div>
+            
+            <img src="Screenshots/Screenshot_2.png" alt="CIKOIN Game Screenshot" height="140">
+            
+            <p style="font-size: 0.4cm; color: rgb(219, 75, 75);">New Update ! 🔥</p>
+            
+            <button class="details-button" onclick="toggleDetails()">
+                <span id="details-toggle-text">📋 Show Details</span>
+            </button>
+            
+            <div class="game-details" id="game-details">
+                <div class="game-description">
+                    Experience the real friendship! Teamwork with your friend, Tap, collect, and master the art of CIKOIN in this addictive arcade-style game with cute graphics style and smooth gameplay.
                 </div>
+                     
+                <div class="features-list">
+                    <strong>✨ Features:</strong>
+                    <ul>
+                        <li>🎯 Challenging levels with increasing difficulty</li>
+                        <li>🏆 Global leaderboards and achievements</li>
+                        <li>💎 Collect special coins and power-ups</li>
+                        <li>👥 Teamwork with your friend</li>
+                        <li>📱 Works perfectly on mobile and desktop</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <a href="Games/CIKOIN/index.html">Play</a>
         </div>
+    </div>
+
+    <script>
+        function toggleDetails() {
+            const details = document.getElementById('game-details');
+            const toggleText = document.getElementById('details-toggle-text');
+            
+            if (details.classList.contains('show')) {
+                details.classList.remove('show');
+                toggleText.textContent = '📋 Show Details';
+            } else {
+                details.classList.add('show');
+                toggleText.textContent = '📋 Hide Details';
+            }
+        }
+    </script>
 </body>
 <script src="https://csibazsombor.github.io/csibazsombor/JS/snow.js"></script>
 </html>

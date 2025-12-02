@@ -17,30 +17,49 @@
                     <h2>Continue?</h2>
                     <p>We noticed that you played before, you can continue to play on the same server</p>
                     <button onclick="Continue();">Continue</button><br><br>
-                    <button class="delete-save" onclick="checkSavedData(true)">Delete</button>
+                    <button class="delete-save" onclick="checkSavedData(true);">Delete</button>
                  </div>
-          <select name="" id="who-play">
+                  <select name="" id="who-play">
                   <option value="">Who Plays?</option>
                   <option value="Toye">Toye</option>
                   <option value="Toya">Toya</option>
           </select>
-          <input type="button" value="Play" onclick="start()">
+          <input type="button" value="Play" onclick="start();">
         </div>
         
         <div class="loading" id="loading">
           <h1>loading..</h1>
         </div>
 
+        <div class="talents" id="talents">
+        <h2 style="color: rgb(167, 150, 212); box-shadow: 0 3px 0px #e6c8a1; background: #ffe8d2; border-radius: 15px;">Select your talent </h2>
+            <div class="talents-container">
+                <button onclick="update_talent('Fighty');">
+                    <img src="talents/Fighty.png" alt="" height="120"><br>
+                    Fighty
+                    <p style="font-size: 0.4cm;">KICKK 😈mehehe</p>
+                </button>
+
+                <button onclick="update_talent('Jumpy');">
+                    <img src="talents/Jumpy.png" alt="" height="120"><br>
+                    Jumpy
+                    <p style="font-size: 0.4cm;">Jump higher!! ⬆️🪽</p>
+                </button>
+            </div>
+                    <button onclick="accept_talent();">Accept</button>
+        </div>
+
         <div class="characters" id="characters">
-         Select Character
-          <select name="" id="character-select" class="character-select" onclick="Update_character()">
+         <h2 style="color: rgb(212, 150, 171); box-shadow: 0 3px 0px #e6c8a1; background: #ffe8d2; border-radius: 15px;">Select Character</h2>
+          <select name="" id="character-select" class="character-select" onclick="Update_character();">
                   <option value="">?</option>
                   <option value="ciko">Ciko</option>
                   <option value="cloe">Cloe</option>
                   <option value="pici catto">Pici Catto</option>
           </select><br>
-                <br><button onclick="accept()">Accept</button></div>
+                <br><button onclick="accept();">Accept</button></div>
                 <div class="server" id="server">
+                <h2 style="color: rgb(209, 84, 116); box-shadow: 0 3px 0px #e6c8a1; background: #ffe8d2; border-radius: 15px;">Join & Create room</h2>
                         <hr>
                         <br><button id="create-server" class="create-btn">🏠 Create game</button><br>
                         <br><input type="text" id="code-value"><button id="join-server">🚪 Join game</button>

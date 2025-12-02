@@ -1,7 +1,7 @@
 // ======================
 // Service Worker Config
 // ======================
-const CACHE_VERSION = "cikoin-v1.8"; // bump when assets change
+const CACHE_VERSION = "cikoin-v1.9"; // bump when assets change
 const CACHE_NAME = `cache-${CACHE_VERSION}`;
 
 // Precache only the most important core files

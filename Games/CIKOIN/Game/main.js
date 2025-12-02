@@ -26,6 +26,25 @@ const firebaseConfig = {
   isHost = snap.val() === USER;
   console.log("Is Host?", isHost);
 });
+  
+     // Read existing talent ONLY (do NOT rewrite it)
+     const talent = localStorage.getItem("talent");
+     
+     console.log("🎯 Talent loaded:", talent);
+     
+     // Default multipliers
+     let TALENT_SPEED_BOOST = 1;
+     let TALENT_JUMP_BOOST  = 1;
+     
+     // Apply only when localStorage has a valid value
+     if (talent === "Fighty") {
+         TALENT_SPEED_BOOST = 2.15; // +23% speed
+     } 
+     else if (talent === "Jumpy") {
+         TALENT_JUMP_BOOST = 1.22; // +10% jump
+     }
+     
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("./sw.js").then(reg => {
     console.log("🛡 SW registered");
@@ -1569,8 +1588,8 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🌍 Same fast speed on all devices
-const WALK_BASE = 160;
-const RUN_BASE  = 170;
+const WALK_BASE = 160 * TALENT_SPEED_BOOST;
+const RUN_BASE  = 170 * TALENT_SPEED_BOOST;
 
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
@@ -1579,7 +1598,7 @@ const ACCEL = 210;
 const DRAG = 0.93;   // keep momentum
 
 const GRAVITY = -30;
-const JUMP_FORCE = 9;
+const JUMP_FORCE = 9 * TALENT_JUMP_BOOST;
 
 let stamina = 3, STAMINA_MAX = 3;
 const DRAIN = 1.1, REGEN_MOVE = 0.7, REGEN_IDLE = 1.8;
@@ -1905,7 +1924,7 @@ for (const name in otherPlayers) {
     mushrooms.forEach(m => {
       const dist = playerRoot.position.distanceTo(m.pos);
       if (dist < 1.6 && isGrounded) {
-        verticalVel = 17; // stronger bounce
+        verticalVel = 28; // stronger bounce
         isGrounded = false;
       
         // ✅ Animate mushroom cap (cute squash effect)
@@ -2008,8 +2027,8 @@ for (const name in otherPlayers) {
   const targetSpeed = (sprint ? RUN : WALK) * speedMult;
 
     // ABSOLUTE CONTROLLED MOVEMENT 🔒
-    const MAX_WALK = 15;   // SUPER slow walk speed
-    const MAX_RUN  = 20;   // Slight sprint boost
+    const MAX_WALK = 15 * TALENT_SPEED_BOOST;   // SUPER slow walk speed
+    const MAX_RUN  = 20 * TALENT_SPEED_BOOST;   // Slight sprint boost
     const isSprint = stamina > 0.1 && moving;
 
     const finalSpeed = isSprint ? MAX_RUN : MAX_WALK;

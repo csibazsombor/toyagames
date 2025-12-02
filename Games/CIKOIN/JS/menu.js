@@ -1,9 +1,12 @@
 let delay_load;
 let count = 1;
 
+// Main
 let player = document.getElementById("who-play");
 let character = document.getElementById("character-select");
+let talent = document.getElementById("talents-select");
 
+// Div Import
 let menu_div = document.getElementById("menu");
 let whoplays_div = document.getElementById("who-plays");
 let load_div = document.getElementById("loading");
@@ -11,10 +14,14 @@ let character_div = document.getElementById("characters");
 let server_div = document.getElementById("server");
 let room_div = document.getElementById("room");
 let continue_div = document.getElementById("continue");
+let talents_div = document.getElementById("talents");
 
+// Player Data
 let your_name = null;
+let your_talent = null;
 let your_character = null;
 let delete_save = false;
+
 document.addEventListener("DOMContentLoaded", () => {
 
     // Read URL param: ?room=xxxx
@@ -27,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Hide unwanted things and go to character select
         whoplays_div.style.display = "block";
         load_div.style.display = "none";
+        talents_div.style.display = "none";
         character_div.style.display = "none";
 
         // Pre-fill join field when join menu appears later
@@ -45,14 +53,6 @@ async function clearAllSiteData() {
         // Clear localStorage + sessionStorage
         localStorage.clear();
         sessionStorage.clear();
-
-        // Delete all Cache Storage (PWA, assets, game files)
-        if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            for (const name of cacheNames) {
-                await caches.delete(name);
-            }
-        }
 
         // Delete all IndexedDB databases if exist
         if (window.indexedDB) {
@@ -92,8 +92,7 @@ function checkSavedData(delete_save = false) {
 
 
 checkSavedData();
-setInterval(checkSavedData, 300);
-
+setInterval(checkSavedData, 1000);
 
 
 function Continue() {
@@ -103,6 +102,7 @@ function Continue() {
         return;
     }
 }
+
 function Update_player() {
        navigator.vibrate(30);
        beep();
@@ -118,7 +118,6 @@ function Update_player() {
     }, 550);   
 
 }    
-
 
 function Update_character() {
 
@@ -150,10 +149,46 @@ function start() {
 function loadgame(){
         clearInterval(delay_load);
         load_div.style.display = "none";
-        document.getElementById("characters").style.display = 'block';
+        talents_div.style.display = "block";
         
 }
 
+const talentButtons = document.querySelectorAll('.talents-container button');
+
+talentButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    // remove selection from others
+    talentButtons.forEach(b => b.classList.remove('selected'));
+    // keep this one selected
+    btn.classList.add('selected');
+  });
+});
+
+function talents() {
+    load_div.style.display = "none";
+    talents_div.style.display = "block"
+}
+
+function update_talent(talent) {
+  if(talent) {
+    your_talent = talent;
+    localStorage.setItem("Talent", talent)
+  } else{
+    console.error("Select a talent!")
+  }
+}
+function accept_talent() {
+    let pressed = false;
+    if(pressed) return;
+    if(your_talent == null) return;
+    else{
+        talents_div.style.display = "none";
+        character_div.style.display = "block";
+        beep_start();
+        navigator.vibrate(30);
+        pressed = true;
+    }
+}
 function accept() {
     let pressed = false;
     if(pressed) return;
