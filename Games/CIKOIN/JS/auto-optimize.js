@@ -1,72 +1,77 @@
 // ===============================
-// AUTO OPTIMIZER for Web Games/PWA
+// AUTO OPTIMIZER – Refresh Website Data
 // ===============================
 const Optimizer = {
-    STORAGE_PREFIX: ["appVersion"],
+    log: (...msg) => console.log("🔄 Optimizer:", ...msg),
 
-    log: (...msg) => console.log("🧹 Optimizer:", ...msg),
+    // Force-refresh all static assets WITHOUT deleting cache/localStorage
+    refreshAssets() {
+        const stamp = Date.now();
 
-    // Safe storage cleanup
-    cleanLocalStorage() {
-        try {
-            const keys = Object.keys(localStorage);
-            keys.forEach(key => {
-                if (!this.STORAGE_PREFIX.some(p => key.includes(p))) {
-                    localStorage.removeItem(key);
-                    this.log("Removed LS:", key);
-                }
-            });
-        } catch (err) { console.warn("LS cleanup failed:", err); }
+        // Refresh <link rel="stylesheet">
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+            if (!link.href) return;
+            link.href = this.addStamp(link.href, stamp);
+        });
+
+        // Refresh <script src="">
+        document.querySelectorAll('script[src]').forEach(script => {
+            if (!script.src) return;
+            script.src = this.addStamp(script.src, stamp);
+        });
+
+        // Refresh <img src="">
+        document.querySelectorAll('img[src]').forEach(img => {
+            img.src = this.addStamp(img.src, stamp);
+        });
+
+        // Refresh <source> (videos, audio)
+        document.querySelectorAll('source[src]').forEach(s => {
+            s.src = this.addStamp(s.src, stamp);
+        });
+
+        // Refresh CSS fonts
+        document.querySelectorAll('link[href*="fonts"], link[href*="font"]').forEach(l => {
+            l.href = this.addStamp(l.href, stamp);
+        });
+
+        this.log("Website assets refreshed ✔");
     },
 
-    // Optimize cache by deleting unknown/old caches
-    async cleanCaches(validCache = null) {
-        if (!('caches' in window)) return;
-
-        const names = await caches.keys();
-        for (const name of names) {
-            if (!validCache || name !== validCache) {
-                await caches.delete(name);
-                this.log("Removed Cache:", name);
-            }
-        }
+    // Helper – add ?t=timestamp to force refresh
+    addStamp(url, stamp) {
+        const noHash = url.split('#')[0];
+        const clean = noHash.split('?')[0];
+        return `${clean}?t=${stamp}`;
     },
 
-    // Cleanup IndexedDB garbage
+    // Cleanup non-needed IndexedDB (optional)
     async cleanIndexedDB() {
-        if (!indexedDB.databases) return;
+        if (!indexedDB.databases) return; // some browsers don't support
         const dbs = await indexedDB.databases();
+
         dbs.forEach(db => {
             const name = db.name;
             if (name && !["firebaseLocalStorageDb"].includes(name)) {
                 indexedDB.deleteDatabase(name);
-                this.log("Deleted IndexedDB:", name);
+                this.log("Deleted indexedDB:", name);
             }
         });
     },
 
-    async fullCleanup(validCache = null) {
-        this.log("Starting FULL cleanup...");
+    // MAIN
+    async autoOptimize() {
+        this.log("Running auto-optimizer...");
 
-        localStorage.clear();
-        sessionStorage.clear();
+        // 1. Refresh all page files without wiping cache
+        this.refreshAssets();
 
-        await this.cleanCaches(validCache);
-        await this.cleanIndexedDB();
+        // 2. Optional: Remove unused IndexedDB
+        this.cleanIndexedDB();
 
-        this.log("FULL cleanup done! ✔️");
-    },
-
-    // Run periodic auto-optimizations every load
-    async autoOptimize(validCache = null) {
-        this.log("Running auto optimizer...");
-
-        this.cleanLocalStorage();
-        await this.cleanCaches(validCache);
-
-        this.log("Auto optimization complete! ✔️");
+        this.log("Auto optimization complete ✔");
     }
 };
 
-// Auto run once per page load
-Optimizer.autoOptimize(); 
+// Run automatically on page load
+Optimizer.autoOptimize();
