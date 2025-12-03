@@ -4,11 +4,95 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Toya Games</title>
-    <link rel="stylesheet" href="CSS/style.css">
-    <link rel="stylesheet" href="CSS/fonts.css">
-    <link rel="stylesheet" href="https://csibazsombor.github.io/csibazsombor/CSS/tel.css">
     <link rel="shortcut icon" href="favicon/favicon.ico" type="image/x-icon">
     <style>
+        /* Loading Screen */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #20191b;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+
+        #loader.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loader-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 20px;
+        }
+
+        .loader-logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+        }
+
+        .progress-container {
+            position: relative;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-bar-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .loader-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .file-loading {
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .percent {
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Main Content */
+        #mainContent {
+            opacity: 0;
+            transition: opacity 0.6s ease 0.2s;
+        }
+
+        #mainContent.visible {
+            opacity: 1;
+        }
+
         .details-button {
             display: inline-block;
             padding: 0.4rem 1rem;
@@ -22,6 +106,7 @@
             margin: 10px 5px;
             transition: 0.3s;
             -webkit-tap-highlight-color: transparent;
+            border: none;
         }
 
         .details-button:hover {
@@ -41,43 +126,6 @@
             max-height: 800px;
             opacity: 1;
             margin: 15px 0;
-        }
-
-        .game-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: bold;
-            margin: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .game-stats {
-            display: flex;
-            justify-content: space-around;
-            margin: 15px 0;
-            padding: 15px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 10px;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .stat-label {
-            font-size: 0.8em;
-            color: #666;
-            margin-top: 3px;
         }
 
         .game-description {
@@ -101,9 +149,8 @@
         }
 
         @media (max-width: 600px) {
-            .game-stats {
-                flex-direction: column;
-                gap: 10px;
+            .loader-logo {
+                font-size: 2rem;
             }
             
             .features-list {
@@ -113,90 +160,89 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>Toya Games</h2>
-    </div>
-
-    <p style="text-align: center;">More games coming soon..</p>
-    
-    <div class="games">
-        <div class="game-container">
-            <div class="title-cikoin">CIKOIN</div>
-            
-            <img src="Screenshots/Screenshot_2.png" alt="CIKOIN Game Screenshot" height="140">
-            
-            <p style="font-size: 0.4cm; color: rgb(219, 75, 75);">New Update ! 🔥</p>
-            
-            <button class="details-button" onclick="toggleDetails()">
-                <span id="details-toggle-text-cikoin">📋 Show Details</span>
-            </button>
-            
-            <div class="game-details" id="game-details">
-                <div class="game-description">
-                    Experience the real friendship! Teamwork with your friend, Tap, collect, and master the art of CIKOIN in this addictive arcade-style game with cute graphics style and smooth gameplay.
-                </div>
-                     
-                <div class="features-list">
-                    <strong>✨ Features:</strong>
-                    <ul>
-                        <li>🎯 Challenging levels with increasing difficulty</li>
-                        <li>🏆 Global leaderboards and achievements</li>
-                        <li>💎 Collect special coins and power-ups</li>
-                        <li>👥 Teamwork with your friend</li>
-                        <li>📱 Works perfectly on mobile and desktop</li>
-                    </ul>
-                </div>
+    <!-- Modern Loading Screen -->
+    <div id="loader">
+        <div class="loader-content">
+            <div class="loader-logo">TOYA GAMES</div>
+            <div class="progress-container">
+                <div class="progress-bar-fill" id="progressBar"></div>
             </div>
-            
-            <a href="Games/CIKOIN/index.html">Play</a>
-        </div>
-    </div>
-       <div class="game-container">
-            <div class="title-cikoin">Pocket Kindoms</div>
-            
-            <!--<img src="" alt="Pocket Kingdoms Game" height="140">-->
-            
-            <p style="font-size: 0.4cm; color: rgb(219, 169, 75);">coming soon</p>
-            
-            <button class="details-button">
-                <span id="details-toggle-text-pk">📋 Show Details</span>
-            </button>
-            
-            <div class="game-details" id="game-details">
-                <div class="game-description">
-                </div>
-                     
-                <div class="features-list">
-                    <strong>✨ Features:</strong>
-                    <ul>
-                        <li></li>
-                        <li></li>
-                        <li></li>
-                        <li></li>
-                        <li></li>
-                    </ul>
-                </div>
+            <div class="loader-info">
+                <span class="file-loading" id="currentFile">Initializing...</span>
+                <span class="percent" id="percentText">0%</span>
             </div>
-            
-            <a href="#coming-soon">Play</a>
         </div>
     </div>
 
-    <script>
-        function toggleDetails() {
-            const details = document.getElementById('game-details');
-            const toggleText_cikoin = document.getElementById('details-toggle-text-cikoin');
-            
-            if (details.classList.contains('show')) {
-                details.classList.remove('show');
-                toggleText_cikoin.textContent = '📋 Show Details';
-            } else {
-                details.classList.add('show');
-                toggleText_cikoin.textContent = '📋 Hide Details';
-            }
-        }
-    </script>
+    <!-- Main Content -->
+    <div id="mainContent">
+        <div class="header">
+            <h2>Toya Games</h2>
+        </div>
+
+        <p style="text-align: center;">More games coming soon..</p>
+        
+        <div class="games">
+            <div class="game-container">
+                <div class="title-cikoin">CIKOIN</div>
+                
+                <img src="Screenshots/Screenshot_2.png" alt="CIKOIN Game Screenshot" height="140">
+                
+                <p style="font-size: 0.4cm; color: rgb(219, 75, 75);">New Update ! 🔥</p>
+                
+                <button class="details-button" onclick="toggleDetails()">
+                    <span id="details-toggle-text-cikoin">📋 Show Details</span>
+                </button>
+                
+                <div class="game-details" id="game-details">
+                    <div class="game-description">
+                        Experience the real friendship! Teamwork with your friend, Tap, collect, and master the art of CIKOIN in this addictive arcade-style game with cute graphics style and smooth gameplay.
+                    </div>
+                         
+                    <div class="features-list">
+                        <strong>✨ Features:</strong>
+                        <ul>
+                            <li>🎯 Challenging levels with increasing difficulty</li>
+                            <li>🏆 Global leaderboards and achievements</li>
+                            <li>💎 Collect special coins and power-ups</li>
+                            <li>👥 Teamwork with your friend</li>
+                            <li>📱 Works perfectly on mobile and desktop</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <a href="Games/CIKOIN/index.html">Play</a>
+            </div>
+
+            <div class="game-container">
+                <div class="title-cikoin">Pocket Kindoms</div>
+                
+                <p style="font-size: 0.4cm; color: rgb(219, 169, 75);">coming soon</p>
+                
+                <button class="details-button">
+                    <span id="details-toggle-text-pk">📋 Show Details</span>
+                </button>
+                
+                <div class="game-details" id="game-details-pk">
+                    <div class="game-description">
+                    </div>
+                         
+                    <div class="features-list">
+                        <strong>✨ Features:</strong>
+                        <ul>
+                            <li></li>
+                            <li></li>
+                            <li></li>
+                            <li></li>
+                            <li></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <a href="#coming-soon">Play</a>
+            </div>
+        </div>
+    </div>
+<script src="Games/CIKOIN/JS/resource-loader.js"></script>
 </body>
-<script src="Games/CIKOIN/JS/auto-optimize.js"></script>
-<script src="https://csibazsombor.github.io/csibazsombor/JS/snow.js"></script>
 </html>
