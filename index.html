@@ -128,7 +128,7 @@
             <p style="font-size: 0.4cm; color: rgb(219, 75, 75);">New Update ! 🔥</p>
             
             <button class="details-button" onclick="toggleDetails()">
-                <span id="details-toggle-text">📋 Show Details</span>
+                <span id="details-toggle-text-cikoin">📋 Show Details</span>
             </button>
             
             <div class="game-details" id="game-details">
@@ -154,12 +154,12 @@
        <div class="game-container">
             <div class="title-cikoin">Pocket Kindoms</div>
             
-            <img src="" alt="Pocket Kingdoms Game" height="140">
+            <!--<img src="" alt="Pocket Kingdoms Game" height="140">-->
             
-            <p style="font-size: 0.4cm; color: rgb(219, 75, 75);">coming soon</p>
+            <p style="font-size: 0.4cm; color: rgb(219, 169, 75);">coming soon</p>
             
-            <button class="details-button" onclick="toggleDetails()">
-                <span id="details-toggle-text">📋 Show Details</span>
+            <button class="details-button">
+                <span id="details-toggle-text-pk">📋 Show Details</span>
             </button>
             
             <div class="game-details" id="game-details">
@@ -185,14 +185,14 @@
     <script>
         function toggleDetails() {
             const details = document.getElementById('game-details');
-            const toggleText = document.getElementById('details-toggle-text');
+            const toggleText_cikoin = document.getElementById('details-toggle-text-cikoin');
             
             if (details.classList.contains('show')) {
                 details.classList.remove('show');
-                toggleText.textContent = '📋 Show Details';
+                toggleText_cikoin.textContent = '📋 Show Details';
             } else {
                 details.classList.add('show');
-                toggleText.textContent = '📋 Hide Details';
+                toggleText_cikoin.textContent = '📋 Hide Details';
             }
         }
     </script>
