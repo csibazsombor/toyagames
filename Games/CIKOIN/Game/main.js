@@ -38,7 +38,7 @@ const firebaseConfig = {
      
      // Apply only when localStorage has a valid value
      if (talent === "Fighty") {
-         TALENT_SPEED_BOOST = 2.15; // +23% speed
+         TALENT_SPEED_BOOST = 1.3; // +10% speed
      } 
      else if (talent === "Jumpy") {
          TALENT_JUMP_BOOST = 1.22; // +10% jump
@@ -266,6 +266,8 @@ if (ROOM) {
       p.targetPos.set(data.x, data.y, data.z);
       p.targetRot.setFromEuler(new THREE.Euler(0, data.rot, 0));
 
+
+
       // Update coins
       p.coins = data.coins || 0;
     }
@@ -370,10 +372,33 @@ loader.load(
     });
 
         // ✅ Store for cloning remote players
-    window.originalPlayerModel = fbx;
-  },
+        window.originalPlayerModel = fbx;
+
+        // 🔥 Replace placeholder remote players with the real model
+        for (const name in otherPlayers) {
+            const p = otherPlayers[name];
+            if (!p.mesh) continue;
+        
+            // Remove placeholder
+            p.mesh.clear();
+        
+            // Create real FBX clone
+            const clone = fbx.clone(true);
+            clone.rotation.y = MODEL_FACE_ADJUST;
+        
+            clone.traverse(obj => {
+                if (obj.isMesh) {
+                    obj.castShadow = true;
+                    obj.receiveShadow = true;
+                }
+            });
+          
+            p.mesh.add(clone);
+          }
+          },
   undefined,
   err => console.error("Model load failed:", err)
+  
 );
 // =========================
 // Detailed Loading Manager
@@ -1433,7 +1458,7 @@ if(isMobile) {
 
   const JOYSTICK_RADIUS = 70;
   const STICK_MAX_DISTANCE = 50;
-  const SENSITIVITY = 0.65; // Lower = less sensitive (0.5 = half speed, 1.0 = full)
+  const SENSITIVITY = 0.3; // Lower = less sensitive (0.5 = half speed, 1.0 = full)
   let activeTouch = null;
   
   const updateJoystick = (touch) => {
@@ -1588,13 +1613,13 @@ let vel = new THREE.Vector3();
 let verticalVel = 0;
 
 // 🌍 Same fast speed on all devices
-const WALK_BASE = 160 * TALENT_SPEED_BOOST;
-const RUN_BASE  = 170 * TALENT_SPEED_BOOST;
+const WALK_BASE = 5 * TALENT_SPEED_BOOST;
+const RUN_BASE  = 8 * TALENT_SPEED_BOOST;
 
 let WALK = WALK_BASE;
 let RUN  = RUN_BASE;
 
-const ACCEL = 210;
+const ACCEL = 1;
 const DRAG = 0.93;   // keep momentum
 
 const GRAVITY = -30;
@@ -1802,20 +1827,24 @@ for (const name in otherPlayers) {
 
   if (!p.walkTime) p.walkTime = 0;
 
-  if (isRemoteMoving) {
-    p.walkTime += dt * 3; // slower animation
+// Correct remote walk animation
+if (isRemoteMoving) {
+    p.walkTime += dt * 3;
     const bob = Math.sin(p.walkTime) * 0.03;
     const sway = Math.sin(p.walkTime * 2) * 0.03;
-    if (p.mesh.children[0]) {
-        const mdl = p.mesh.children[0];
-        mdl.position.y = bob;
-        mdl.rotation.z = sway;
-    }
 
-  } else {
-    p.mesh.position.y += (0 - p.mesh.position.y) * 0.12;
-    p.mesh.rotation.z += (0 - p.mesh.rotation.z) * 0.12;
-  }
+    if (p.mesh.children.length > 0) {
+        const mdl = p.mesh.children[0]; // FBX inside group
+        mdl.position.y = bob;       // OK
+        mdl.rotation.z = sway;      // OK
+    }
+} else {
+    if (p.mesh.children.length > 0) {
+        const mdl = p.mesh.children[0];
+        mdl.position.y += (0 - mdl.position.y) * 0.12;
+        mdl.rotation.z += (0 - mdl.rotation.z) * 0.12;
+    }
+}
 }
 
 
@@ -2027,8 +2056,8 @@ for (const name in otherPlayers) {
   const targetSpeed = (sprint ? RUN : WALK) * speedMult;
 
     // ABSOLUTE CONTROLLED MOVEMENT 🔒
-    const MAX_WALK = 15 * TALENT_SPEED_BOOST;   // SUPER slow walk speed
-    const MAX_RUN  = 20 * TALENT_SPEED_BOOST;   // Slight sprint boost
+    const MAX_WALK = 10 * TALENT_SPEED_BOOST;   // SUPER slow walk speed
+    const MAX_RUN  = 15 * TALENT_SPEED_BOOST;   // Slight sprint boost
     const isSprint = stamina > 0.1 && moving;
 
     const finalSpeed = isSprint ? MAX_RUN : MAX_WALK;
@@ -2136,14 +2165,16 @@ if (distCat < 2.5) {
 
   // Apply position
   playerRoot.position.copy(newPos);
+
     // ✅ Multiplayer player-to-player collision
     for (const name in otherPlayers) {
-      const p = otherPlayers[name];
-      if (!p.mesh) continue;
-    
-      const dx = playerRoot.position.x - p.x;
-      const dz = playerRoot.position.z - p.z;
-      const distSq = dx*dx + dz*dz;
+    const p = otherPlayers[name];
+    if (!p.mesh) continue;
+
+    const dx = playerRoot.position.x - p.mesh.position.x;
+    const dz = playerRoot.position.z - p.mesh.position.z;
+
+        const distSq = dx*dx + dz*dz;
     
       if (distSq < PLAYER_COLLISION_RADIUS * PLAYER_COLLISION_RADIUS) {
         const dist = Math.sqrt(distSq) || 0.001;
