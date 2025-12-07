@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pocket Kingdom - Menu</title>
+    <style>
+        body {
+            font-family: 'story', sans-serif;
+            text-align: center;
+            padding-top: 6cm;
+            background: linear-gradient(135deg, #fff8f0 0%, #ffe8d6 100%);
+            color: #4a5568;
+            min-height: 100vh;
+        }
+
+        h2 {
+            font-size: 1.7cm;
+            margin-bottom: 0.4cm;
+            color: #ffcfa8;
+            text-shadow: 0 3px 0 #e6a66d;
+        }
+
+        .dots {
+            display: inline-block;
+            animation: blink 1.2s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .subtitle {
+            font-size: 0.5cm;
+            color: #7d8a9f;
+            margin-bottom: 1.5cm;
+        }
+
+        .features {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 1cm;
+            padding: 0 20px;
+        }
+
+        .feature-card {
+            background: #ffffff;
+            border: 2px solid #ffe8ee;
+            border-radius: 18px;
+            padding: 25px;
+            width: 180px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-card:nth-child(1) {
+            border-color: #ffe0c2;
+        }
+
+        .feature-card:nth-child(2) {
+            border-color: #ffd4a8;
+        }
+
+        .feature-card:nth-child(3) {
+            border-color: #ffebcc;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(255, 180, 120, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-title {
+            font-size: 0.5cm;
+            color: #5a6b7f;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            font-size: 0.35cm;
+            color: #8a96a8;
+            line-height: 1.4;
+        }
+
+        button {
+            display: inline-block;
+            padding: 0.55rem 1.25rem;
+            margin-top: 1.5cm;
+            font-size: 1rem;
+            color: #fff;
+            background: #ffb47a;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            box-shadow: 0 4px 0px #e69860;
+            transition: 0.18s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 0px #d18550;
+            background: #ffa566;
+        }
+
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 0px #d18550;
+        }
+
+        @media (max-width: 480px) {
+            body { padding-top: 3cm; }
+            .features { flex-direction: column; align-items: center; }
+            .feature-card { width: 80%; }
+        }
+    </style>
+</head>
+<body>
+    <h2>Under development<span class="dots">...</span></h2>
+    <p class="subtitle">The game coming soon</p>
+    <button onclick="window.history.back()">Go Back</button>
+</body>
+</html>
